@@ -75,7 +75,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Header / Brand */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <AppLogo size="md" />
+            <div className="shrink-0 flex items-center justify-center">
+              <AppLogo size="md" />
+            </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-base font-bold tracking-tight text-white font-sans">

@@ -126,7 +126,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-xl bg-slate-900 border border-slate-800 p-1 shadow-lg shrink-0 flex items-center justify-center">
+              <div className="shrink-0 flex items-center justify-center">
                 <AppLogo size="lg" />
               </div>
               <div>

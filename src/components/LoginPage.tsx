@@ -15,6 +15,7 @@ import {
 import { StorageService } from '../services/storage';
 import { User as UserType, STRUKTUR_ORGANISASI_TRANSNAKER } from '../types';
 import { AppLogo } from './AppLogo';
+import kantorImg from '../assets/images/kantor_transnaker_lutra_1790478338052.jpg';
 
 interface LoginPageProps {
   onLoginSuccess: (user: UserType) => void;
@@ -107,7 +108,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       {/* Background with slight overlay */}
       <div className="absolute inset-0 z-0">
         <img 
-          src="/src/assets/images/kantor_transnaker_lutra_1790478338052.jpg" 
+          src={kantorImg} 
           alt="Kantor Dinas Transmigrasi dan Tenaga Kerja Luwu Utara" 
           className="w-full h-full object-cover opacity-20 filter blur-xs"
         />

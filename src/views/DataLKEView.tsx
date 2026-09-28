@@ -14,7 +14,9 @@ import {
   ChevronRight,
   ExternalLink,
   Shield,
-  X
+  X,
+  Link as LinkIcon,
+  FolderOpen
 } from 'lucide-react';
 import { ActiveMenu, LKEItem, KKEPDItem, SakipDocument, User } from '../types';
 import { PrintHeader, PrintSignature } from '../components/PrintHeader';
@@ -49,14 +51,35 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
   const [kkePilihan, setKkePilihan] = useState<'A' | 'B' | 'C' | 'D' | 'E'>('A');
   const [kkeCatatan, setKkeCatatan] = useState('');
   const [kkeRekomendasi, setKkeRekomendasi] = useState('');
+  const [kkeLinkEvidence, setKkeLinkEvidence] = useState('');
+  const [kkeTautanDokumenId, setKkeTautanDokumenId] = useState('');
 
   // Modal for editing LKE
   const [editingLKE, setEditingLKE] = useState<LKEItem | null>(null);
   const [lkeNilai, setLkeNilai] = useState<number>(80);
   const [lkeStatusDukung, setLkeStatusDukung] = useState<LKEItem['statusDukung']>('Lengkap');
   const [lkeCatatan, setLkeCatatan] = useState('');
+  const [lkeLinkEvidence, setLkeLinkEvidence] = useState('');
+  const [lkeTautanDokumenId, setLkeTautanDokumenId] = useState('');
 
   const isAdmin = currentUser?.role === 'admin';
+
+  // Helper to find linked SakipDocument by ID or keyword
+  const findLinkedDoc = (docId?: string, keywords: string[] = []): SakipDocument | undefined => {
+    if (docId) {
+      const match = documents.find((d) => d.id === docId);
+      if (match) return match;
+    }
+    for (const kw of keywords) {
+      const match = documents.find(
+        (d) =>
+          d.title.toLowerCase().includes(kw.toLowerCase()) ||
+          kw.toLowerCase().includes(d.kategori.toLowerCase())
+      );
+      if (match) return match;
+    }
+    return undefined;
+  };
 
   // Sub-navigation tab list
   const tabs: { id: ActiveMenu; label: string }[] = [
@@ -85,6 +108,8 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
       skor: computedSkor,
       catatanTimSAKIP: kkeCatatan,
       rekomendasiPerbaikan: kkeRekomendasi,
+      linkEvidence: kkeLinkEvidence.trim() || undefined,
+      tautanDokumenId: kkeTautanDokumenId.trim() || undefined,
     };
 
     onSaveKKEPD(updated);
@@ -102,6 +127,8 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
       nilaiAkhir: computedAkhir,
       statusDukung: lkeStatusDukung,
       catatanEvaluator: lkeCatatan,
+      linkEvidence: lkeLinkEvidence.trim() || undefined,
+      tautanDokumenId: lkeTautanDokumenId.trim() || undefined,
     };
 
     onSaveLKE(updated);
@@ -365,16 +392,28 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   <tr className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                     <th className="py-3 px-3 border-r border-slate-200 w-36">Komponen</th>
                     <th className="py-3 px-4 border-r border-slate-200 min-w-[200px]">Kriteria & Parameter</th>
-                    <th className="py-3 px-2.5 text-center border-r border-slate-200 w-16">Bobot</th>
-                    <th className="py-3 px-2.5 text-center border-r border-slate-200 w-16">Skor</th>
-                    <th className="py-3 px-2.5 text-center border-r border-slate-200 w-16">Nilai</th>
+                    <th className="py-3 px-2 text-center border-r border-slate-200 w-14">Bobot</th>
+                    <th className="py-3 px-2 text-center border-r border-slate-200 w-14">Skor</th>
+                    <th className="py-3 px-2 text-center border-r border-slate-200 w-14">Nilai</th>
                     <th className="py-3 px-3 border-r border-slate-200 w-28 text-center">Status Eviden</th>
-                    <th className="py-3 px-4 border-r border-slate-200 min-w-[180px]">Catatan Evaluasi</th>
+                    <th className="py-3 px-3 border-r border-slate-200 min-w-[200px] text-blue-900 bg-blue-50/50">Link Evidence</th>
+                    <th className="py-3 px-4 border-r border-slate-200 min-w-[170px]">Catatan Evaluasi</th>
                     <th className="no-print py-3 px-3 text-center w-16">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {lkeItems.map((item) => (
+                  {lkeItems.filter(item => {
+                    if (!searchQuery) return true;
+                    const q = searchQuery.toLowerCase();
+                    return (
+                      item.komponen.toLowerCase().includes(q) ||
+                      item.subkomponen.toLowerCase().includes(q) ||
+                      item.kriteria.toLowerCase().includes(q) ||
+                      item.parameter.toLowerCase().includes(q) ||
+                      (item.linkEvidence && item.linkEvidence.toLowerCase().includes(q)) ||
+                      item.dokumenTerkait.some(d => d.toLowerCase().includes(q))
+                    );
+                  }).map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/70">
                       <td className="py-3 px-3 border-r border-slate-200">
                         <span className="font-bold text-slate-900 block">{item.komponen}</span>
@@ -385,19 +424,19 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                         <div className="text-[11px] text-slate-500 mt-0.5">{item.parameter}</div>
                         <div className="mt-1 flex flex-wrap gap-1">
                           {item.dokumenTerkait.map((doc, i) => (
-                            <span key={i} className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">
+                            <span key={i} className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">
                               {doc}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td className="py-3 px-2.5 text-center font-mono text-slate-600 border-r border-slate-200">
+                      <td className="py-3 px-2 text-center font-mono text-slate-600 border-r border-slate-200">
                         {item.bobot}%
                       </td>
-                      <td className="py-3 px-2.5 text-center font-mono font-bold text-slate-800 border-r border-slate-200">
+                      <td className="py-3 px-2 text-center font-mono font-bold text-slate-800 border-r border-slate-200">
                         {item.nilai}
                       </td>
-                      <td className="py-3 px-2.5 text-center font-mono font-bold text-blue-600 border-r border-slate-200">
+                      <td className="py-3 px-2 text-center font-mono font-bold text-blue-600 border-r border-slate-200">
                         {item.nilaiAkhir.toFixed(2)}
                       </td>
                       <td className="py-3 px-3 text-center border-r border-slate-200">
@@ -409,6 +448,79 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                           {item.statusDukung}
                         </span>
                       </td>
+                      {/* Kolom Link Evidence */}
+                      <td className="py-3 px-3 border-r border-slate-200 bg-blue-50/20">
+                        {(() => {
+                          const linkedDoc = findLinkedDoc(item.tautanDokumenId, item.dokumenTerkait);
+                          const hasExternal = Boolean(item.linkEvidence);
+
+                          if (!linkedDoc && !hasExternal) {
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] text-slate-400 italic">Belum ada link</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingLKE(item);
+                                    setLkeNilai(item.nilai);
+                                    setLkeStatusDukung(item.statusDukung);
+                                    setLkeCatatan(item.catatanEvaluator);
+                                    setLkeLinkEvidence(item.linkEvidence || '');
+                                    setLkeTautanDokumenId(item.tautanDokumenId || '');
+                                  }}
+                                  className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold hover:underline"
+                                  title="Tambah Link Evidence"
+                                >
+                                  + Tautkan
+                                </button>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="space-y-1.5">
+                              {/* Internal Document Button for Instant Preview */}
+                              {linkedDoc && (
+                                <button
+                                  type="button"
+                                  onClick={() => onViewDocPreview && onViewDocPreview(linkedDoc)}
+                                  className="w-full flex items-center justify-between gap-1.5 px-2 py-1 bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 hover:border-blue-400 rounded-md text-[11px] font-medium shadow-2xs transition-all text-left cursor-pointer group"
+                                  title={`Buka & Preview: ${linkedDoc.title}`}
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0 group-hover:scale-110 transition-transform" />
+                                    <span className="truncate max-w-[115px] font-semibold">{linkedDoc.fileName}</span>
+                                  </div>
+                                  <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-blue-100 text-blue-800 font-bold shrink-0">
+                                    {linkedDoc.fileType}
+                                  </span>
+                                </button>
+                              )}
+
+                              {/* External Link or Cloud Drive */}
+                              {hasExternal && (
+                                <a
+                                  href={item.linkEvidence}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="w-full flex items-center justify-between gap-1.5 px-2 py-1 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-200 hover:border-emerald-400 rounded-md text-[11px] font-medium shadow-2xs transition-all group"
+                                  title={`Buka Tautan: ${item.linkEvidence}`}
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <ExternalLink className="w-3.5 h-3.5 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" />
+                                    <span className="truncate max-w-[120px] font-medium">
+                                      {item.linkEvidence!.includes('drive.google.com')
+                                        ? 'Google Drive'
+                                        : item.linkEvidence!.replace(/^https?:\/\//, '').split('/')[0]}
+                                    </span>
+                                  </div>
+                                  <span className="text-[9px] text-emerald-700 font-semibold shrink-0">Buka ↗</span>
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
                       <td className="py-3 px-4 border-r border-slate-200 text-slate-600 text-[11px]">
                         {item.catatanEvaluator}
                       </td>
@@ -419,9 +531,11 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                             setLkeNilai(item.nilai);
                             setLkeStatusDukung(item.statusDukung);
                             setLkeCatatan(item.catatanEvaluator);
+                            setLkeLinkEvidence(item.linkEvidence || '');
+                            setLkeTautanDokumenId(item.tautanDokumenId || '');
                           }}
                           className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded"
-                          title="Perbarui Penilaian Butir LKE"
+                          title="Perbarui Penilaian & Link Evidence LKE"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
@@ -498,15 +612,57 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                         {item.skor}
                       </td>
                       <td className="py-3 px-4 border-r border-slate-200">
-                        <div className="text-slate-800 font-medium flex items-center gap-1.5">
+                        <div className="text-slate-800 font-medium flex items-center gap-1.5 mb-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           <span>{item.dataDukungDiunggah}</span>
                         </div>
-                        {item.tautanDokumenId && (
-                          <span className="text-[10px] text-blue-600 font-mono block mt-0.5">
-                            ID: {item.tautanDokumenId}
-                          </span>
-                        )}
+                        {/* Link Evidence Interactive Buttons */}
+                        {(() => {
+                          const linkedDoc = findLinkedDoc(item.tautanDokumenId);
+                          const hasExternal = Boolean(item.linkEvidence);
+
+                          if (!linkedDoc && !hasExternal) {
+                            return null;
+                          }
+
+                          return (
+                            <div className="flex flex-col gap-1 mt-1">
+                              {linkedDoc && (
+                                <button
+                                  type="button"
+                                  onClick={() => onViewDocPreview && onViewDocPreview(linkedDoc)}
+                                  className="inline-flex items-center justify-between gap-1.5 px-2 py-1 bg-blue-50/80 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[11px] font-medium transition-colors cursor-pointer group text-left max-w-fit"
+                                  title={`Preview Dokumen: ${linkedDoc.title}`}
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <FileText className="w-3 h-3 text-blue-600 shrink-0" />
+                                    <span className="truncate max-w-[130px] font-semibold">{linkedDoc.fileName}</span>
+                                  </div>
+                                  <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-blue-100 text-blue-800 font-bold shrink-0">
+                                    {linkedDoc.fileType}
+                                  </span>
+                                </button>
+                              )}
+                              {hasExternal && (
+                                <a
+                                  href={item.linkEvidence}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded text-[11px] font-medium transition-colors max-w-fit"
+                                  title={`Buka Link Evidence: ${item.linkEvidence}`}
+                                >
+                                  <ExternalLink className="w-3 h-3 text-emerald-600 shrink-0" />
+                                  <span className="truncate max-w-[140px]">
+                                    {item.linkEvidence!.includes('drive.google.com')
+                                      ? 'Google Drive'
+                                      : item.linkEvidence!.replace(/^https?:\/\//, '').split('/')[0]}
+                                  </span>
+                                  <span className="text-[9px] text-emerald-700 font-semibold">↗</span>
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="py-3 px-4 border-r border-slate-200 text-slate-600 text-[11px]">
                         <div><strong>Catatan:</strong> {item.catatanTimSAKIP}</div>
@@ -519,9 +675,11 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                             setKkePilihan(item.pilihan);
                             setKkeCatatan(item.catatanTimSAKIP);
                             setKkeRekomendasi(item.rekomendasiPerbaikan);
+                            setKkeLinkEvidence(item.linkEvidence || '');
+                            setKkeTautanDokumenId(item.tautanDokumenId || '');
                           }}
                           className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded"
-                          title="Input / Edit KKE PD"
+                          title="Input / Edit KKE PD & Link Evidence"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
@@ -709,6 +867,44 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                 />
               </div>
 
+              {/* Tautan Dokumen SAKIP Internal */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Pilih Dokumen SAKIP Internal (Opsional)</span>
+                  <span className="text-[10px] text-slate-500 font-normal">Akan terhubung ke viewer berkas</span>
+                </label>
+                <select
+                  value={kkeTautanDokumenId}
+                  onChange={(e) => setKkeTautanDokumenId(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 text-xs"
+                >
+                  <option value="">-- Pilih dari Berkas Dokumen SAKIP --</option>
+                  {documents.map((doc) => (
+                    <option key={doc.id} value={doc.id}>
+                      [{doc.kategori}] {doc.title} ({doc.fileName})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Link Evidence External */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Link Evidence / URL Bukti Digital</span>
+                  <span className="text-[10px] text-slate-500 font-normal">Google Drive, Cloud Storage, atau Web</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/... atau https://..."
+                    value={kkeLinkEvidence}
+                    onChange={(e) => setKkeLinkEvidence(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <LinkIcon className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                </div>
+              </div>
+
               <div className="pt-2 border-t border-slate-100 flex justify-end gap-2">
                 <button
                   type="button"
@@ -732,10 +928,10 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
       {/* Modal Edit LKE Item */}
       {editingLKE && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 text-xs">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200 text-xs">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <h3 className="text-sm font-bold text-slate-900">
-                Update Parameter LKE
+                Update Parameter & Link Evidence LKE
               </h3>
               <button
                 onClick={() => setEditingLKE(null)}
@@ -752,33 +948,73 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                 <p className="text-[11px] text-slate-500 mt-0.5">{editingLKE.parameter}</p>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Nilai Skor Capaian (0 - 100)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={lkeNilai}
-                  onChange={(e) => setLkeNilai(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 font-mono font-bold"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Nilai Skor (0 - 100)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={lkeNilai}
+                    onChange={(e) => setLkeNilai(Number(e.target.value))}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 font-mono font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Status Dokumen Eviden
+                  </label>
+                  <select
+                    value={lkeStatusDukung}
+                    onChange={(e) => setLkeStatusDukung(e.target.value as any)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900"
+                  >
+                    <option value="Lengkap">Lengkap</option>
+                    <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                    <option value="Belum Lengkap">Belum Lengkap</option>
+                  </select>
+                </div>
               </div>
 
+              {/* Tautan Dokumen SAKIP Internal */}
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Status Eviden / Dokumen Pendukung
+                <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Pilih Dokumen SAKIP Internal (Opsional)</span>
+                  <span className="text-[10px] text-slate-500 font-normal">Dapat dipratinjau langsung di aplikasi</span>
                 </label>
                 <select
-                  value={lkeStatusDukung}
-                  onChange={(e) => setLkeStatusDukung(e.target.value as any)}
-                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900"
+                  value={lkeTautanDokumenId}
+                  onChange={(e) => setLkeTautanDokumenId(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 text-xs"
                 >
-                  <option value="Lengkap">Lengkap</option>
-                  <option value="Perlu Perbaikan">Perlu Perbaikan</option>
-                  <option value="Belum Lengkap">Belum Lengkap</option>
+                  <option value="">-- Pilih dari Berkas Dokumen SAKIP --</option>
+                  {documents.map((doc) => (
+                    <option key={doc.id} value={doc.id}>
+                      [{doc.kategori}] {doc.title} ({doc.fileName})
+                    </option>
+                  ))}
                 </select>
+              </div>
+
+              {/* Link Evidence External / URL */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Link Evidence (URL / Tautan Bukti Digital)</span>
+                  <span className="text-[10px] text-slate-500 font-normal">Google Drive, Cloud Storage, atau Website</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/... atau https://transnaker.luwuutarakab.go.id/..."
+                    value={lkeLinkEvidence}
+                    onChange={(e) => setLkeLinkEvidence(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <LinkIcon className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                </div>
               </div>
 
               <div>
@@ -786,7 +1022,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   Catatan Evaluator
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={lkeCatatan}
                   onChange={(e) => setLkeCatatan(e.target.value)}
                   className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 resize-none"

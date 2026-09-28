@@ -164,6 +164,8 @@ export interface LKEItem {
   nilaiAkhir: number;
   statusDukung: 'Lengkap' | 'Belum Lengkap' | 'Perlu Perbaikan';
   dokumenTerkait: string[];
+  linkEvidence?: string;
+  tautanDokumenId?: string;
   catatanEvaluator: string;
 }
 
@@ -180,6 +182,7 @@ export interface KKEPDItem {
   skor: number;
   dataDukungDiunggah: string;
   tautanDokumenId?: string;
+  linkEvidence?: string;
   catatanTimSAKIP: string;
   rekomendasiPerbaikan: string;
 }

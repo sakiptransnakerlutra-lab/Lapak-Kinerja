@@ -249,7 +249,18 @@ export const StorageService = {
   // LKE
   getLKEItems(): LKEItem[] {
     this.init();
-    return getItem<LKEItem[]>(KEYS.LKE, INITIAL_LKE_ITEMS);
+    const stored = getItem<LKEItem[]>(KEYS.LKE, INITIAL_LKE_ITEMS);
+    return stored.map(item => {
+      const initial = INITIAL_LKE_ITEMS.find(i => i.id === item.id);
+      if (initial) {
+        return {
+          ...item,
+          linkEvidence: item.linkEvidence ?? initial.linkEvidence,
+          tautanDokumenId: item.tautanDokumenId ?? initial.tautanDokumenId,
+        };
+      }
+      return item;
+    });
   },
 
   saveLKEItem(item: LKEItem): void {
@@ -271,7 +282,18 @@ export const StorageService = {
   // KKE PD
   getKKEPD(): KKEPDItem[] {
     this.init();
-    return getItem<KKEPDItem[]>(KEYS.KKE_PD, INITIAL_KKE_PD);
+    const stored = getItem<KKEPDItem[]>(KEYS.KKE_PD, INITIAL_KKE_PD);
+    return stored.map(item => {
+      const initial = INITIAL_KKE_PD.find(i => i.id === item.id);
+      if (initial) {
+        return {
+          ...item,
+          linkEvidence: item.linkEvidence ?? initial.linkEvidence,
+          tautanDokumenId: item.tautanDokumenId ?? initial.tautanDokumenId,
+        };
+      }
+      return item;
+    });
   },
 
   saveKKEPD(item: KKEPDItem): void {

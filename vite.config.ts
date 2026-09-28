@@ -5,17 +5,33 @@ import fs from 'fs';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  const rootDir = process.cwd();
+
+  // Determine base path:
+  // 1. Explicit VITE_BASE_PATH if provided
+  // 2. In GitHub Actions: extract repo name from GITHUB_REPOSITORY (e.g. 'owner/repo' -> '/repo/')
+  //    (if it's a user/org page like 'owner/owner.github.io', base is '/')
+  // 3. Fallback to './' for local builds or relative deployments
+  let basePath = './';
+  if (process.env.VITE_BASE_PATH) {
+    basePath = process.env.VITE_BASE_PATH;
+  } else if (process.env.GITHUB_REPOSITORY) {
+    const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
+    const isUserPage = repo && owner && repo.toLowerCase() === `${owner.toLowerCase()}.github.io`;
+    basePath = isUserPage ? '/' : `/${repo}/`;
+  }
+
   return {
-    // Relative base ensures assets load properly on GitHub Pages regardless of repository subpath
-    base: './',
+    base: basePath,
     plugins: [
       react(), 
       tailwindcss(),
       {
         name: 'generate-404-for-github-pages',
         closeBundle() {
-          const indexPath = path.resolve(__dirname, 'dist/index.html');
-          const fourOhFourPath = path.resolve(__dirname, 'dist/404.html');
+          const distDir = path.resolve(rootDir, 'dist');
+          const indexPath = path.resolve(distDir, 'index.html');
+          const fourOhFourPath = path.resolve(distDir, '404.html');
           if (fs.existsSync(indexPath)) {
             fs.copyFileSync(indexPath, fourOhFourPath);
           }
@@ -24,7 +40,7 @@ export default defineConfig(() => {
     ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': rootDir,
       },
     },
     server: {

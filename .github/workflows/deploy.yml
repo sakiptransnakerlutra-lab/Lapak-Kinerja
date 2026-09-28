@@ -30,15 +30,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+
+      - name: Setup GitHub Pages configuration
+        id: pages
+        uses: actions/configure-pages@v5
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci || npm install
 
-      - name: Build project
+      - name: Build project with Vite
         run: npm run build
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+        env:
+          GITHUB_PAGES: 'true'
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

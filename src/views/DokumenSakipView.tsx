@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { SakipDocument, User, STRUKTUR_ORGANISASI_TRANSNAKER } from '../types';
 import { PrintHeader, PrintSignature } from '../components/PrintHeader';
+import { ExportDropdown } from '../components/ExportDropdown';
+import { exportDokumenSakipToExcel, exportDokumenSakipToCSV } from '../utils/exportUtils';
 
 interface DokumenSakipViewProps {
   documents: SakipDocument[];
@@ -95,13 +97,33 @@ export const DokumenSakipView: React.FC<DokumenSakipViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={onOpenUpload}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors shrink-0"
-        >
-          <UploadCloud className="w-4 h-4" />
-          <span>Unggah Dokumen (*.xlsx / *.pdf)</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <ExportDropdown
+            label="Ekspor ke Excel"
+            itemCount={filteredDocs.length}
+            dataName="Dokumen SAKIP"
+            onExportExcel={() => exportDokumenSakipToExcel(filteredDocs, {
+              category: selectedCategory,
+              year: selectedYear,
+              bidang: selectedBidang,
+              searchQuery
+            })}
+            onExportCSV={() => exportDokumenSakipToCSV(filteredDocs, {
+              category: selectedCategory,
+              year: selectedYear,
+              bidang: selectedBidang,
+              searchQuery
+            })}
+          />
+
+          <button
+            onClick={onOpenUpload}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors shrink-0 cursor-pointer"
+          >
+            <UploadCloud className="w-4 h-4" />
+            <span>Unggah Dokumen (*.xlsx / *.pdf)</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Category & Year */}

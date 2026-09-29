@@ -25,6 +25,13 @@ import {
 } from 'lucide-react';
 import { ActiveMenu, LKEItem, KKEPDItem, SakipDocument, User } from '../types';
 import { PrintHeader, PrintSignature } from '../components/PrintHeader';
+import { ExportDropdown } from '../components/ExportDropdown';
+import { 
+  exportLKEToExcel, 
+  exportLKEToCSV,
+  exportKKEPDToExcel,
+  exportKKEPDToCSV
+} from '../utils/exportUtils';
 
 interface DataLKEViewProps {
   activeSubMenu: ActiveMenu;
@@ -84,6 +91,20 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
   };
 
   const isAdmin = currentUser?.role === 'admin';
+
+  const filteredLKE = lkeItems.filter(item => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      item.komponen.toLowerCase().includes(q) ||
+      item.subkomponen.toLowerCase().includes(q) ||
+      item.kriteria.toLowerCase().includes(q) ||
+      item.parameter.toLowerCase().includes(q) ||
+      (item.linkEvidence && item.linkEvidence.toLowerCase().includes(q)) ||
+      (item.uploadedFileName && item.uploadedFileName.toLowerCase().includes(q)) ||
+      item.dokumenTerkait.some(d => d.toLowerCase().includes(q))
+    );
+  });
 
   // Helper to find linked SakipDocument by ID or keyword
   const findLinkedDoc = (docId?: string, keywords: string[] = []): SakipDocument | undefined => {
@@ -479,13 +500,24 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   Ringkasan nilai evaluasi mandiri dan pemenuhan eviden data dukung
                 </p>
               </div>
-              <button
-                onClick={() => window.print()}
-                className="no-print flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Cetak Rekap</span>
-              </button>
+              <div className="no-print flex items-center gap-2">
+                <ExportDropdown
+                  label="Ekspor ke Excel"
+                  itemCount={lkeItems.length}
+                  dataName="Rekap LKE"
+                  onExportExcel={() => exportLKEToExcel(lkeItems, { year: 2024, searchQuery })}
+                  onExportCSV={() => exportLKEToCSV(lkeItems, { year: 2024, searchQuery })}
+                />
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+                  title="Cetak Rekapitulasi LKE"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Cetak Rekap</span>
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -687,7 +719,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
           />
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+            <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
                   Daftar Parameter dan Indikator Uji LKE
@@ -695,6 +727,25 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                 <p className="text-xs text-slate-500">
                   Pengujian kelengkapan dokumen dukung dan penilaian evaluator
                 </p>
+              </div>
+
+              <div className="no-print flex items-center gap-2">
+                <ExportDropdown
+                  label="Ekspor ke Excel"
+                  itemCount={filteredLKE.length}
+                  dataName="Data LKE"
+                  onExportExcel={() => exportLKEToExcel(filteredLKE, { year: 2024, searchQuery })}
+                  onExportCSV={() => exportLKEToCSV(filteredLKE, { year: 2024, searchQuery })}
+                />
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+                  title="Cetak Rincian LKE"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Cetak</span>
+                </button>
               </div>
             </div>
 
@@ -727,19 +778,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {lkeItems.filter(item => {
-                    if (!searchQuery) return true;
-                    const q = searchQuery.toLowerCase();
-                    return (
-                      item.komponen.toLowerCase().includes(q) ||
-                      item.subkomponen.toLowerCase().includes(q) ||
-                      item.kriteria.toLowerCase().includes(q) ||
-                      item.parameter.toLowerCase().includes(q) ||
-                      (item.linkEvidence && item.linkEvidence.toLowerCase().includes(q)) ||
-                      (item.uploadedFileName && item.uploadedFileName.toLowerCase().includes(q)) ||
-                      item.dokumenTerkait.some(d => d.toLowerCase().includes(q))
-                    );
-                  }).map((item) => (
+                  {filteredLKE.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/70">
                       <td className="py-3 px-3 border-r border-slate-200">
                         <span className="font-bold text-slate-900 block">{item.komponen}</span>
@@ -1002,13 +1041,24 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   Formulir kendali evaluasi mandiri perangkat daerah beserta bukti tautan data dukung
                 </p>
               </div>
-              <button
-                onClick={() => window.print()}
-                className="no-print flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
-              >
-                <Printer className="w-3.5 h-3.5 text-slate-500" />
-                <span>Cetak KKE PD</span>
-              </button>
+              <div className="no-print flex items-center gap-2">
+                <ExportDropdown
+                  label="Ekspor ke Excel"
+                  itemCount={kkePdItems.length}
+                  dataName="KKE PD"
+                  onExportExcel={() => exportKKEPDToExcel(kkePdItems)}
+                  onExportCSV={() => exportKKEPDToCSV(kkePdItems)}
+                />
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+                  title="Cetak KKE PD"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Cetak KKE PD</span>
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">

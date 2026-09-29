@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { IKPItem, IKKItem } from '../types';
+import { IKPItem, IKKItem, LKEItem, KKEPDItem, SakipDocument } from '../types';
 
 /**
  * Format currency to Indonesian Rupiah string (e.g., Rp 150.000.000)
@@ -404,3 +404,481 @@ export function exportIKKToCSV(items: IKKItem[], options: ExportIKKOptions): voi
   const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
   downloadBlob(blob, `Laporan_Capaian_IKK_Transnaker_Luwu_Utara_${year}.csv`);
 }
+
+// ==========================================
+// 3. LKE EXPORT (Lembar Kerja Evaluasi SAKIP)
+// ==========================================
+
+export interface ExportLKEOptions {
+  year?: number;
+  searchQuery?: string;
+}
+
+/**
+ * Export Data LKE to native Excel (.xlsx) format
+ */
+export function exportLKEToExcel(items: LKEItem[], options?: ExportLKEOptions): void {
+  const year = options?.year || 2024;
+  const wb = XLSX.utils.book_new();
+
+  const formattedDate = new Date().toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const total = items.length;
+  const lengkapCount = items.filter(i => i.statusDukung === 'Lengkap').length;
+  const perluPerbaikanCount = items.filter(i => i.statusDukung === 'Perlu Perbaikan').length;
+  const belumLengkapCount = items.filter(i => i.statusDukung === 'Belum Lengkap').length;
+  const totalNilaiAkhir = items.reduce((acc, curr) => acc + curr.nilaiAkhir, 0);
+
+  const rows: any[][] = [
+    ['PEMERINTAH KABUPATEN LUWU UTARA'],
+    ['DINAS TRANSMIGRASI DAN TENAGA KERJA'],
+    [`DATA RINCIAN LEMBAR KERJA EVALUASI (LKE) SAKIP TAHUN ANGGARAN ${year}`],
+    [`Tanggal Unduh: ${formattedDate} | Total Parameter: ${total} | Eviden Lengkap: ${lengkapCount} | Nilai Tertimbang: ${totalNilaiAkhir.toFixed(2)}`],
+    [], // empty line
+    [
+      'No',
+      'Komponen SAKIP',
+      'Sub-Komponen',
+      'Kriteria Evaluasi',
+      'Parameter & Indikator Uji',
+      'Bobot (%)',
+      'Skor (0-100)',
+      'Nilai Tertimbang',
+      'Status Eviden',
+      'Dokumen Wajib Terkait',
+      'Dokumen Eviden Terunggah',
+      'Format & Ukuran Berkas',
+      'Waktu Unggah',
+      'Pengunggah',
+      'Tautan Link Evidence',
+      'Catatan & Rekomendasi Evaluator',
+    ],
+  ];
+
+  items.forEach((item, index) => {
+    rows.push([
+      index + 1,
+      item.komponen,
+      item.subkomponen,
+      item.kriteria,
+      item.parameter,
+      item.bobot,
+      item.nilai,
+      Number(item.nilaiAkhir.toFixed(2)),
+      item.statusDukung,
+      item.dokumenTerkait.join('; '),
+      item.uploadedFileName || '-',
+      item.uploadedFileName ? `${item.uploadedFileType?.toUpperCase() || 'FILE'} (${item.uploadedFileSize || '-'})` : '-',
+      item.uploadedAt || '-',
+      item.uploadedBy || '-',
+      item.linkEvidence || '-',
+      item.catatanEvaluator || '-',
+    ]);
+  });
+
+  // Summary footer
+  rows.push([]);
+  rows.push(['REKAPITULASI CAPAIAN LEMBAR KERJA EVALUASI (LKE) SAKIP']);
+  rows.push(['Total Parameter Evaluasi', total]);
+  rows.push(['Total Nilai Capaian LKE SAKIP', Number(totalNilaiAkhir.toFixed(2))]);
+  rows.push(['Predikat Nilai Capaian', totalNilaiAkhir >= 80 ? 'A (Memuaskan)' : (totalNilaiAkhir >= 70 ? 'BB (Sangat Baik)' : 'B (Baik)')]);
+  rows.push(['Parameter dengan Eviden Lengkap', `${lengkapCount} Butir`]);
+  rows.push(['Parameter Perlu Perbaikan', `${perluPerbaikanCount} Butir`]);
+  rows.push(['Parameter Belum Lengkap', `${belumLengkapCount} Butir`]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  ws['!cols'] = [
+    { wch: 5 },  // No
+    { wch: 22 }, // Komponen
+    { wch: 24 }, // Subkomponen
+    { wch: 35 }, // Kriteria
+    { wch: 45 }, // Parameter
+    { wch: 10 }, // Bobot
+    { wch: 12 }, // Skor
+    { wch: 15 }, // Nilai Akhir
+    { wch: 16 }, // Status
+    { wch: 32 }, // Dokumen Terkait
+    { wch: 35 }, // Berkas Terunggah
+    { wch: 18 }, // Format & Ukuran
+    { wch: 18 }, // Waktu Unggah
+    { wch: 20 }, // Pengunggah
+    { wch: 35 }, // Link Evidence
+    { wch: 40 }, // Catatan Evaluator
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, `Data_LKE_${year}`);
+  const filename = `Data_LKE_SAKIP_Transnaker_Luwu_Utara_${year}.xlsx`;
+  downloadWorkbook(wb, filename);
+}
+
+/**
+ * Export Data LKE to CSV format with UTF-8 BOM
+ */
+export function exportLKEToCSV(items: LKEItem[], options?: ExportLKEOptions): void {
+  const year = options?.year || 2024;
+
+  const headers = [
+    'No',
+    'Komponen',
+    'Sub-Komponen',
+    'Kriteria',
+    'Parameter',
+    'Bobot (%)',
+    'Skor',
+    'Nilai Tertimbang',
+    'Status Eviden',
+    'Dokumen Terkait',
+    'Berkas Terunggah',
+    'Ukuran Berkas',
+    'Pengunggah',
+    'Waktu Unggah',
+    'Link Evidence',
+    'Catatan Evaluasi',
+  ];
+
+  const escapeCSV = (str: any) => {
+    if (str === null || str === undefined) return '""';
+    const s = String(str).replace(/"/g, '""');
+    return `"${s}"`;
+  };
+
+  const lines: string[] = [
+    `# PEMERINTAH KABUPATEN LUWU UTARA`,
+    `# DINAS TRANSMIGRASI DAN TENAGA KERJA`,
+    `# DATA RINCIAN LEMBAR KERJA EVALUASI (LKE) SAKIP TAHUN ${year}`,
+    headers.map(escapeCSV).join(','),
+  ];
+
+  items.forEach((item, index) => {
+    const row = [
+      index + 1,
+      item.komponen,
+      item.subkomponen,
+      item.kriteria,
+      item.parameter,
+      item.bobot,
+      item.nilai,
+      item.nilaiAkhir.toFixed(2),
+      item.statusDukung,
+      item.dokumenTerkait.join('; '),
+      item.uploadedFileName || '-',
+      item.uploadedFileSize || '-',
+      item.uploadedBy || '-',
+      item.uploadedAt || '-',
+      item.linkEvidence || '-',
+      item.catatanEvaluator || '-',
+    ];
+    lines.push(row.map(escapeCSV).join(','));
+  });
+
+  const csvString = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, `Data_LKE_SAKIP_Transnaker_Luwu_Utara_${year}.csv`);
+}
+
+// ==========================================
+// 4. DOKUMEN SAKIP EXPORT (Bank Data & Berkas)
+// ==========================================
+
+export interface ExportDokumenSakipOptions {
+  category?: string;
+  year?: string;
+  bidang?: string;
+  searchQuery?: string;
+}
+
+/**
+ * Export Daftar Dokumen SAKIP to native Excel (.xlsx) format
+ */
+export function exportDokumenSakipToExcel(docs: SakipDocument[], options?: ExportDokumenSakipOptions): void {
+  const wb = XLSX.utils.book_new();
+
+  const formattedDate = new Date().toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const total = docs.length;
+  const pdfCount = docs.filter(d => d.fileType === 'pdf').length;
+  const xlsxCount = docs.filter(d => d.fileType === 'xlsx').length;
+  const docxCount = docs.filter(d => d.fileType === 'docx').length;
+  const verifiedCount = docs.filter(d => d.statusVerifikasi === 'Terverifikasi').length;
+
+  const categoryLabel = options?.category && options.category !== 'all' ? options.category : 'Semua Kategori';
+  const yearLabel = options?.year && options.year !== 'all' ? options.year : 'Semua Tahun';
+  const bidangLabel = options?.bidang && options.bidang !== 'all' ? options.bidang : 'Semua Unit Kerja';
+
+  const rows: any[][] = [
+    ['PEMERINTAH KABUPATEN LUWU UTARA'],
+    ['DINAS TRANSMIGRASI DAN TENAGA KERJA'],
+    ['REPOSITORI DATA DUKUNG & DAFTAR DOKUMEN RESMI SAKIP'],
+    [`Tanggal Unduh: ${formattedDate} | Kategori: ${categoryLabel} | Tahun: ${yearLabel} | Unit Kerja: ${bidangLabel} | Total Dokumen: ${total}`],
+    [], // empty line
+    [
+      'No',
+      'Judul Dokumen SAKIP',
+      'Nomor Surat / SK Legalitas',
+      'Kategori',
+      'Tahun Anggaran',
+      'Unit Pengunggah (Bidang / Sekretariat)',
+      'Nama Berkas Digital',
+      'Format Berkas',
+      'Ukuran Berkas',
+      'Pengunggah (Uploader)',
+      'Tanggal Unggah',
+      'Status Verifikasi',
+      'Deskripsi / Catatan Dokumen',
+    ],
+  ];
+
+  docs.forEach((doc, index) => {
+    rows.push([
+      index + 1,
+      doc.title,
+      doc.nomorSurat || '-',
+      doc.kategori,
+      doc.tahun,
+      doc.bidang,
+      doc.fileName,
+      doc.fileType.toUpperCase(),
+      doc.fileSize || '-',
+      doc.uploadedBy,
+      doc.uploadedAt,
+      doc.statusVerifikasi || 'Terverifikasi',
+      doc.deskripsi || '-',
+    ]);
+  });
+
+  // Summary footer
+  rows.push([]);
+  rows.push(['RINGKASAN REPOSITORI DOKUMEN KINERJA SAKIP']);
+  rows.push(['Total Dokumen Terdaftar', total]);
+  rows.push(['Dokumen Format PDF (*.pdf)', `${pdfCount} Berkas`]);
+  rows.push(['Dokumen Spreadsheet Excel (*.xlsx)', `${xlsxCount} Berkas`]);
+  rows.push(['Dokumen Word (*.docx)', `${docxCount} Berkas`]);
+  rows.push(['Dokumen Berstatus Terverifikasi', `${verifiedCount} Berkas`]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  ws['!cols'] = [
+    { wch: 5 },  // No
+    { wch: 45 }, // Judul Dokumen
+    { wch: 25 }, // Nomor Surat
+    { wch: 14 }, // Kategori
+    { wch: 12 }, // Tahun
+    { wch: 32 }, // Unit Pengunggah
+    { wch: 40 }, // Nama Berkas
+    { wch: 12 }, // Format
+    { wch: 14 }, // Ukuran
+    { wch: 20 }, // Pengunggah
+    { wch: 15 }, // Tanggal Unggah
+    { wch: 18 }, // Status Verifikasi
+    { wch: 40 }, // Deskripsi
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Dokumen_SAKIP');
+  const filename = `Daftar_Dokumen_SAKIP_Transnaker_Luwu_Utara.xlsx`;
+  downloadWorkbook(wb, filename);
+}
+
+/**
+ * Export Daftar Dokumen SAKIP to CSV format with UTF-8 BOM
+ */
+export function exportDokumenSakipToCSV(docs: SakipDocument[], options?: ExportDokumenSakipOptions): void {
+  const headers = [
+    'No',
+    'Judul Dokumen',
+    'Nomor Surat',
+    'Kategori',
+    'Tahun',
+    'Unit Pengunggah',
+    'Nama Berkas',
+    'Format Berkas',
+    'Ukuran Berkas',
+    'Pengunggah',
+    'Tanggal Unggah',
+    'Status Verifikasi',
+    'Deskripsi',
+  ];
+
+  const escapeCSV = (str: any) => {
+    if (str === null || str === undefined) return '""';
+    const s = String(str).replace(/"/g, '""');
+    return `"${s}"`;
+  };
+
+  const lines: string[] = [
+    `# PEMERINTAH KABUPATEN LUWU UTARA`,
+    `# DINAS TRANSMIGRASI DAN TENAGA KERJA`,
+    `# REPOSITORI DOKUMEN RESMI SAKIP`,
+    headers.map(escapeCSV).join(','),
+  ];
+
+  docs.forEach((doc, index) => {
+    const row = [
+      index + 1,
+      doc.title,
+      doc.nomorSurat || '-',
+      doc.kategori,
+      doc.tahun,
+      doc.bidang,
+      doc.fileName,
+      doc.fileType.toUpperCase(),
+      doc.fileSize || '-',
+      doc.uploadedBy,
+      doc.uploadedAt,
+      doc.statusVerifikasi || 'Terverifikasi',
+      doc.deskripsi || '-',
+    ];
+    lines.push(row.map(escapeCSV).join(','));
+  });
+
+  const csvString = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, `Daftar_Dokumen_SAKIP_Transnaker_Luwu_Utara.csv`);
+}
+
+// ==========================================
+// 5. KKE PD EXPORT (Kertas Kerja Evaluasi PD)
+// ==========================================
+
+export function exportKKEPDToExcel(items: KKEPDItem[]): void {
+  const wb = XLSX.utils.book_new();
+
+  const formattedDate = new Date().toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const total = items.length;
+  const avgSkor = total > 0 ? (items.reduce((acc, c) => acc + c.skor, 0) / total).toFixed(2) : '0';
+
+  const rows: any[][] = [
+    ['PEMERINTAH KABUPATEN LUWU UTARA'],
+    ['DINAS TRANSMIGRASI DAN TENAGA KERJA'],
+    ['KERTAS KERJA EVALUASI PERANGKAT DAERAH (KKE PD) SAKIP 2024'],
+    [`Tanggal Unduh: ${formattedDate} | Total Indikator: ${total} | Rata-rata Skor: ${avgSkor}`],
+    [],
+    [
+      'No',
+      'Kode',
+      'Aspek Evaluasi',
+      'Indikator Uji',
+      'Pertanyaan Evaluasi',
+      'Pilihan Nilai',
+      'Skor',
+      'Data Dukung Diunggah',
+      'Berkas Dokumen Eviden',
+      'Ukuran Berkas',
+      'Link Evidence',
+      'Catatan Tim SAKIP',
+      'Rekomendasi Perbaikan',
+    ],
+  ];
+
+  items.forEach((item, index) => {
+    rows.push([
+      index + 1,
+      item.kode,
+      item.aspek,
+      item.indikator,
+      item.pertanyaan,
+      item.pilihan,
+      item.skor,
+      item.dataDukungDiunggah,
+      item.uploadedFileName || '-',
+      item.uploadedFileSize || '-',
+      item.linkEvidence || '-',
+      item.catatanTimSAKIP || '-',
+      item.rekomendasiPerbaikan || '-',
+    ]);
+  });
+
+  rows.push([]);
+  rows.push(['RINGKASAN KERTAS KERJA EVALUASI PERANGKAT DAERAH']);
+  rows.push(['Total Parameter Uji KKE PD', total]);
+  rows.push(['Rata-rata Skor Capaian', Number(avgSkor)]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  ws['!cols'] = [
+    { wch: 5 },  // No
+    { wch: 14 }, // Kode
+    { wch: 25 }, // Aspek
+    { wch: 35 }, // Indikator
+    { wch: 45 }, // Pertanyaan
+    { wch: 10 }, // Pilihan
+    { wch: 10 }, // Skor
+    { wch: 35 }, // Data Dukung
+    { wch: 35 }, // Berkas
+    { wch: 15 }, // Ukuran
+    { wch: 35 }, // Link Evidence
+    { wch: 35 }, // Catatan
+    { wch: 35 }, // Rekomendasi
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'KKE_PD_2024');
+  const filename = `KKE_PD_SAKIP_Transnaker_Luwu_Utara_2024.xlsx`;
+  downloadWorkbook(wb, filename);
+}
+
+export function exportKKEPDToCSV(items: KKEPDItem[]): void {
+  const headers = [
+    'No',
+    'Kode',
+    'Aspek Evaluasi',
+    'Indikator',
+    'Pertanyaan',
+    'Pilihan',
+    'Skor',
+    'Data Dukung',
+    'Berkas Terunggah',
+    'Link Evidence',
+    'Catatan Tim SAKIP',
+    'Rekomendasi Perbaikan',
+  ];
+
+  const escapeCSV = (str: any) => {
+    if (str === null || str === undefined) return '""';
+    const s = String(str).replace(/"/g, '""');
+    return `"${s}"`;
+  };
+
+  const lines: string[] = [
+    `# PEMERINTAH KABUPATEN LUWU UTARA`,
+    `# DINAS TRANSMIGRASI DAN TENAGA KERJA`,
+    `# KERTAS KERJA EVALUASI PERANGKAT DAERAH (KKE PD) SAKIP 2024`,
+    headers.map(escapeCSV).join(','),
+  ];
+
+  items.forEach((item, index) => {
+    const row = [
+      index + 1,
+      item.kode,
+      item.aspek,
+      item.indikator,
+      item.pertanyaan,
+      item.pilihan,
+      item.skor,
+      item.dataDukungDiunggah,
+      item.uploadedFileName || '-',
+      item.linkEvidence || '-',
+      item.catatanTimSAKIP || '-',
+      item.rekomendasiPerbaikan || '-',
+    ];
+    lines.push(row.map(escapeCSV).join(','));
+  });
+
+  const csvString = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, `KKE_PD_SAKIP_Transnaker_Luwu_Utara_2024.csv`);
+}
+
+

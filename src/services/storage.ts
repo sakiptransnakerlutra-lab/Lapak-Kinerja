@@ -289,13 +289,38 @@ export const StorageService = {
   getLKEItems(): LKEItem[] {
     this.init();
     const stored = getItem<LKEItem[]>(KEYS.LKE, INITIAL_LKE_ITEMS);
-    return stored.map(item => {
+    let needsSave = false;
+    const result = stored.map(item => {
       const initial = INITIAL_LKE_ITEMS.find(i => i.id === item.id);
+      
+      // Clean pre-seeded dummy links and documents on LKE
+      const isDummyLink = item.linkEvidence && (
+        item.linkEvidence.includes('transnaker.luwuutarakab.go.id/sakip') ||
+        item.linkEvidence.includes('monev-triwulan2-transnaker-lutra') ||
+        item.linkEvidence.includes('notulensi-monev-internal-2024') ||
+        item.linkEvidence.includes('capaian-kinerja-tw3-2024')
+      );
+      const isDummyDoc = item.tautanDokumenId && (
+        ['doc-renstra', 'doc-pk', 'doc-monev', 'doc-lkjip', 'doc-renja'].includes(item.tautanDokumenId)
+      );
+
+      let cleanLink = item.linkEvidence;
+      let cleanDoc = item.tautanDokumenId;
+
+      if (isDummyLink) {
+        cleanLink = undefined;
+        needsSave = true;
+      }
+      if (isDummyDoc) {
+        cleanDoc = undefined;
+        needsSave = true;
+      }
+
       if (initial) {
         return {
           ...item,
-          linkEvidence: item.linkEvidence ?? initial.linkEvidence,
-          tautanDokumenId: item.tautanDokumenId ?? initial.tautanDokumenId,
+          linkEvidence: cleanLink,
+          tautanDokumenId: cleanDoc,
           uploadedFileName: item.uploadedFileName ?? initial.uploadedFileName,
           uploadedFileSize: item.uploadedFileSize ?? initial.uploadedFileSize,
           uploadedFileType: item.uploadedFileType ?? initial.uploadedFileType,
@@ -304,8 +329,17 @@ export const StorageService = {
           uploadedBy: item.uploadedBy ?? initial.uploadedBy,
         };
       }
-      return item;
+      return {
+        ...item,
+        linkEvidence: cleanLink,
+        tautanDokumenId: cleanDoc,
+      };
     });
+
+    if (needsSave) {
+      setItem(KEYS.LKE, result);
+    }
+    return result;
   },
 
   saveLKEItem(item: LKEItem): void {

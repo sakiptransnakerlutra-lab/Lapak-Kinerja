@@ -18,6 +18,7 @@ import {
   Link as LinkIcon,
   FolderOpen,
   Upload,
+  UploadCloud,
   Eye,
   Trash2,
   Sparkles,
@@ -81,6 +82,24 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
   const [lkeUploadedFileSize, setLkeUploadedFileSize] = useState<string | undefined>(undefined);
   const [lkeUploadedFileType, setLkeUploadedFileType] = useState<string | undefined>(undefined);
   const [lkeUploadedFileDataUrl, setLkeUploadedFileDataUrl] = useState<string | undefined>(undefined);
+
+  // Dedicated Upload Dokumen Evidence Modals (Data LKE & KKE PD)
+  const [uploadLKEModalOpen, setUploadLKEModalOpen] = useState(false);
+  const [selectedLKEForUploadId, setSelectedLKEForUploadId] = useState<string>('');
+  const [modalLKEFile, setModalLKEFile] = useState<File | null>(null);
+  const [modalLKELink, setModalLKELink] = useState<string>('');
+  const [modalLKETautanDocId, setModalLKETautanDocId] = useState<string>('');
+  const [modalLKEStatus, setModalLKEStatus] = useState<'Lengkap' | 'Perlu Perbaikan' | 'Belum Lengkap'>('Lengkap');
+  const [modalLKECatatan, setModalLKECatatan] = useState<string>('');
+
+  const [uploadKKEModalOpen, setUploadKKEModalOpen] = useState(false);
+  const [selectedKKEForUploadId, setSelectedKKEForUploadId] = useState<string>('');
+  const [modalKKEFile, setModalKKEFile] = useState<File | null>(null);
+  const [modalKKELink, setModalKKELink] = useState<string>('');
+  const [modalKKETautanDocId, setModalKKETautanDocId] = useState<string>('');
+  const [modalKKEPilihan, setModalKKEPilihan] = useState<'A' | 'B' | 'C' | 'D' | 'E'>('A');
+  const [modalKKECatatan, setModalKKECatatan] = useState<string>('');
+  const [modalKKERekomendasi, setModalKKERekomendasi] = useState<string>('');
 
   // Toast notification
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'info' } | null>(null);
@@ -279,6 +298,138 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
         deskripsi: `Dokumen eviden data dukung KKE PD: ${item.pertanyaan}`,
         statusVerifikasi: 'Terverifikasi',
       });
+    }
+  };
+
+  // Dedicated Openers & Submits for Upload Dokumen Evidence Modals
+  const openUploadLKEModal = (item?: LKEItem) => {
+    const target = item || lkeItems[0];
+    if (!target) return;
+    setSelectedLKEForUploadId(target.id);
+    setModalLKEFile(null);
+    setModalLKELink(target.linkEvidence || '');
+    setModalLKETautanDocId(target.tautanDokumenId || '');
+    setModalLKEStatus(target.statusDukung);
+    setModalLKECatatan(target.catatanEvaluator || '');
+    setUploadLKEModalOpen(true);
+  };
+
+  const handleUploadLKEOk = (e: React.FormEvent) => {
+    e.preventDefault();
+    const target = lkeItems.find(i => i.id === selectedLKEForUploadId);
+    if (!target) return;
+
+    if (modalLKEFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const sizeStr = modalLKEFile.size > 1024 * 1024 
+          ? `${(modalLKEFile.size / (1024 * 1024)).toFixed(1)} MB`
+          : `${Math.round(modalLKEFile.size / 1024)} KB`;
+        const ext = modalLKEFile.name.split('.').pop()?.toLowerCase() || 'pdf';
+
+        const updated: LKEItem = {
+          ...target,
+          uploadedFileName: modalLKEFile.name,
+          uploadedFileSize: sizeStr,
+          uploadedFileType: ext,
+          uploadedFileDataUrl: dataUrl,
+          uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          uploadedBy: currentUser?.name || 'Operator SAKIP',
+          statusDukung: modalLKEStatus,
+          linkEvidence: modalLKELink.trim() || undefined,
+          tautanDokumenId: modalLKETautanDocId.trim() || undefined,
+          catatanEvaluator: modalLKECatatan.trim() || target.catatanEvaluator,
+        };
+
+        onSaveLKE(updated);
+        setUploadLKEModalOpen(false);
+        showToast(`Dokumen evidence "${modalLKEFile.name}" berhasil diunggah untuk parameter ${target.parameter}!`);
+      };
+      reader.readAsDataURL(modalLKEFile);
+    } else {
+      const updated: LKEItem = {
+        ...target,
+        statusDukung: modalLKEStatus,
+        linkEvidence: modalLKELink.trim() || undefined,
+        tautanDokumenId: modalLKETautanDocId.trim() || undefined,
+        catatanEvaluator: modalLKECatatan.trim() || target.catatanEvaluator,
+      };
+      onSaveLKE(updated);
+      setUploadLKEModalOpen(false);
+      showToast(`Data evidence parameter ${target.parameter} berhasil diperbarui!`);
+    }
+  };
+
+  const openUploadKKEModal = (item?: KKEPDItem) => {
+    const target = item || kkePdItems[0];
+    if (!target) return;
+    setSelectedKKEForUploadId(target.id);
+    setModalKKEFile(null);
+    setModalKKELink(target.linkEvidence || '');
+    setModalKKETautanDocId(target.tautanDokumenId || '');
+    setModalKKEPilihan(target.pilihan);
+    setModalKKECatatan(target.catatanTimSAKIP || '');
+    setModalKKERekomendasi(target.rekomendasiPerbaikan || '');
+    setUploadKKEModalOpen(true);
+  };
+
+  const handleUploadKKEOk = (e: React.FormEvent) => {
+    e.preventDefault();
+    const target = kkePdItems.find(i => i.id === selectedKKEForUploadId);
+    if (!target) return;
+
+    let computedSkor = 90;
+    if (modalKKEPilihan === 'A') computedSkor = 90;
+    else if (modalKKEPilihan === 'B') computedSkor = 80;
+    else if (modalKKEPilihan === 'C') computedSkor = 65;
+    else if (modalKKEPilihan === 'D') computedSkor = 50;
+    else computedSkor = 30;
+
+    if (modalKKEFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const sizeStr = modalKKEFile.size > 1024 * 1024 
+          ? `${(modalKKEFile.size / (1024 * 1024)).toFixed(1)} MB`
+          : `${Math.round(modalKKEFile.size / 1024)} KB`;
+        const ext = modalKKEFile.name.split('.').pop()?.toLowerCase() || 'pdf';
+
+        const updated: KKEPDItem = {
+          ...target,
+          pilihan: modalKKEPilihan,
+          skor: computedSkor,
+          dataDukungDiunggah: modalKKEFile.name,
+          uploadedFileName: modalKKEFile.name,
+          uploadedFileSize: sizeStr,
+          uploadedFileType: ext,
+          uploadedFileDataUrl: dataUrl,
+          uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          uploadedBy: currentUser?.name || 'Operator SAKIP',
+          linkEvidence: modalKKELink.trim() || undefined,
+          tautanDokumenId: modalKKETautanDocId.trim() || undefined,
+          catatanTimSAKIP: modalKKECatatan.trim() || target.catatanTimSAKIP,
+          rekomendasiPerbaikan: modalKKERekomendasi.trim() || target.rekomendasiPerbaikan,
+        };
+
+        onSaveKKEPD(updated);
+        setUploadKKEModalOpen(false);
+        showToast(`Dokumen evidence "${modalKKEFile.name}" berhasil diunggah untuk KKE PD ${target.kode}!`);
+      };
+      reader.readAsDataURL(modalKKEFile);
+    } else {
+      const updated: KKEPDItem = {
+        ...target,
+        pilihan: modalKKEPilihan,
+        skor: computedSkor,
+        linkEvidence: modalKKELink.trim() || undefined,
+        tautanDokumenId: modalKKETautanDocId.trim() || undefined,
+        catatanTimSAKIP: modalKKECatatan.trim() || target.catatanTimSAKIP,
+        rekomendasiPerbaikan: modalKKERekomendasi.trim() || target.rekomendasiPerbaikan,
+      };
+      onSaveKKEPD(updated);
+      setUploadKKEModalOpen(false);
+      showToast(`Data evidence KKE PD ${target.kode} berhasil diperbarui!`);
     }
   };
 
@@ -721,15 +872,28 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
           <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
             <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Daftar Parameter dan Indikator Uji LKE
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>Daftar Parameter dan Indikator Uji LKE</span>
+                  <span className="text-xs font-normal text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                    {filteredLKE.length} Parameter
+                  </span>
                 </h3>
                 <p className="text-xs text-slate-500">
                   Pengujian kelengkapan dokumen dukung dan penilaian evaluator
                 </p>
               </div>
 
-              <div className="no-print flex items-center gap-2">
+              <div className="no-print flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openUploadLKEModal(filteredLKE[0])}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                  title="Upload Dokumen Evidence untuk Parameter LKE"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Upload Dokumen Evidence</span>
+                </button>
+
                 <ExportDropdown
                   label="Ekspor ke Excel"
                   itemCount={filteredLKE.length}
@@ -759,11 +923,11 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                     <th className="py-3 px-2 text-center border-r border-slate-200 w-14">Skor</th>
                     <th className="py-3 px-2 text-center border-r border-slate-200 w-14">Nilai</th>
                     <th className="py-3 px-3 border-r border-slate-200 w-28 text-center">Status Eviden</th>
-                    {/* Kolom Upload Dokumen Eviden */}
-                    <th className="py-3 px-3 border-r border-slate-200 min-w-[210px] text-blue-900 bg-blue-50/60 font-bold">
+                    {/* Kolom Upload Dokumen Evidence */}
+                    <th className="py-3 px-3 border-r border-slate-200 min-w-[220px] text-blue-900 bg-blue-50/60 font-bold">
                       <div className="flex items-center gap-1.5">
                         <Upload className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Upload Dokumen Eviden</span>
+                        <span>Upload Dokumen Evidence</span>
                       </div>
                     </th>
                     {/* Kolom Link Evidence */}
@@ -774,7 +938,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                       </div>
                     </th>
                     <th className="py-3 px-4 border-r border-slate-200 min-w-[160px]">Catatan Evaluasi</th>
-                    <th className="no-print py-3 px-3 text-center w-16">Aksi</th>
+                    <th className="no-print py-3 px-3 text-center w-20">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -881,16 +1045,15 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                           </div>
                         ) : (
                           <div className="space-y-1">
-                            <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-900 border border-blue-200 hover:border-blue-300 rounded-md text-[11px] font-bold cursor-pointer transition-colors shadow-2xs group">
-                              <Upload className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
-                              <span>Unggah Dokumen</span>
-                              <input
-                                type="file"
-                                accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
-                                className="hidden"
-                                onChange={(e) => handleLKEFileUpload(e, item)}
-                              />
-                            </label>
+                            <button
+                              type="button"
+                              onClick={() => openUploadLKEModal(item)}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-900 border border-blue-200 hover:border-blue-300 rounded-md text-[11px] font-bold cursor-pointer transition-colors shadow-2xs group"
+                              title="Upload Dokumen Evidence untuk Parameter Ini"
+                            >
+                              <UploadCloud className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                              <span>Upload Dokumen Evidence</span>
+                            </button>
                             
                             {(() => {
                               const linked = findLinkedDoc(item.tautanDokumenId, item.dokumenTerkait);
@@ -906,7 +1069,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                                   </button>
                                 );
                               }
-                              return <div className="text-[10px] text-slate-400">PDF, Excel, Word, ZIP</div>;
+                              return <div className="text-[10px] text-slate-400">PDF, Excel (.xlsx), Word, ZIP</div>;
                             })()}
                           </div>
                         )}
@@ -993,24 +1156,35 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                         {item.catatanEvaluator}
                       </td>
                       <td className="no-print py-3 px-3 text-center">
-                        <button
-                          onClick={() => {
-                            setEditingLKE(item);
-                            setLkeNilai(item.nilai);
-                            setLkeStatusDukung(item.statusDukung);
-                            setLkeCatatan(item.catatanEvaluator);
-                            setLkeLinkEvidence(item.linkEvidence || '');
-                            setLkeTautanDokumenId(item.tautanDokumenId || '');
-                            setLkeUploadedFileName(item.uploadedFileName);
-                            setLkeUploadedFileSize(item.uploadedFileSize);
-                            setLkeUploadedFileType(item.uploadedFileType);
-                            setLkeUploadedFileDataUrl(item.uploadedFileDataUrl);
-                          }}
-                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded"
-                          title="Perbarui Penilaian & Link Evidence LKE"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openUploadLKEModal(item)}
+                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                            title="Upload Dokumen Evidence untuk Parameter Ini"
+                          >
+                            <UploadCloud className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingLKE(item);
+                              setLkeNilai(item.nilai);
+                              setLkeStatusDukung(item.statusDukung);
+                              setLkeCatatan(item.catatanEvaluator);
+                              setLkeLinkEvidence(item.linkEvidence || '');
+                              setLkeTautanDokumenId(item.tautanDokumenId || '');
+                              setLkeUploadedFileName(item.uploadedFileName);
+                              setLkeUploadedFileSize(item.uploadedFileSize);
+                              setLkeUploadedFileType(item.uploadedFileType);
+                              setLkeUploadedFileDataUrl(item.uploadedFileDataUrl);
+                            }}
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors cursor-pointer"
+                            title="Perbarui Penilaian & Link Evidence LKE"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1034,14 +1208,27 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
           <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
             <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Instrumen KKE PD (Penilaian Pemenuhan Kriteria)
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>Instrumen KKE PD (Penilaian Pemenuhan Kriteria)</span>
+                  <span className="text-xs font-normal text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                    {kkePdItems.length} Indikator
+                  </span>
                 </h3>
                 <p className="text-xs text-slate-500">
                   Formulir kendali evaluasi mandiri perangkat daerah beserta bukti tautan data dukung
                 </p>
               </div>
-              <div className="no-print flex items-center gap-2">
+              <div className="no-print flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openUploadKKEModal(kkePdItems[0])}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                  title="Upload Dokumen Evidence untuk Instrumen KKE PD"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Upload Dokumen Evidence</span>
+                </button>
+
                 <ExportDropdown
                   label="Ekspor ke Excel"
                   itemCount={kkePdItems.length}
@@ -1071,11 +1258,11 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                     <th className="py-3 px-2 text-center border-r border-slate-200 w-12">Pilihan</th>
                     <th className="py-3 px-2.5 text-center border-r border-slate-200 w-14">Skor</th>
                     <th className="py-3 px-3 border-r border-slate-200 min-w-[150px]">Kriteria Data Dukung</th>
-                    {/* Kolom Upload Dokumen Eviden */}
-                    <th className="py-3 px-3 border-r border-slate-200 min-w-[210px] text-blue-900 bg-blue-50/60 font-bold">
+                    {/* Kolom Upload Dokumen Evidence */}
+                    <th className="py-3 px-3 border-r border-slate-200 min-w-[220px] text-blue-900 bg-blue-50/60 font-bold">
                       <div className="flex items-center gap-1.5">
                         <Upload className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Upload Dokumen Eviden</span>
+                        <span>Upload Dokumen Evidence</span>
                       </div>
                     </th>
                     {/* Kolom Link Evidence */}
@@ -1086,7 +1273,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                       </div>
                     </th>
                     <th className="py-3 px-4 border-r border-slate-200 min-w-[160px]">Catatan / Rekomendasi SAKIP</th>
-                    <th className="no-print py-3 px-3 text-center w-16">Aksi</th>
+                    <th className="no-print py-3 px-3 text-center w-20">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1184,17 +1371,16 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                           </div>
                         ) : (
                           <div className="space-y-1">
-                            <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-900 border border-blue-200 hover:border-blue-300 rounded-md text-[11px] font-bold cursor-pointer transition-colors shadow-2xs group">
-                              <Upload className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
-                              <span>Unggah Dokumen</span>
-                              <input
-                                type="file"
-                                accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
-                                className="hidden"
-                                onChange={(e) => handleKKEFileUpload(e, item)}
-                              />
-                            </label>
-                            <div className="text-[10px] text-slate-400">PDF, Excel, Word, ZIP</div>
+                            <button
+                              type="button"
+                              onClick={() => openUploadKKEModal(item)}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-900 border border-blue-200 hover:border-blue-300 rounded-md text-[11px] font-bold cursor-pointer transition-colors shadow-2xs group"
+                              title="Upload Dokumen Evidence untuk Butir KKE PD Ini"
+                            >
+                              <UploadCloud className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                              <span>Upload Dokumen Evidence</span>
+                            </button>
+                            <div className="text-[10px] text-slate-400">PDF, Excel (.xlsx), Word, ZIP</div>
                           </div>
                         )}
                       </td>
@@ -1277,24 +1463,35 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                         <div className="text-blue-700 mt-1"><strong>Rekomendasi:</strong> {item.rekomendasiPerbaikan}</div>
                       </td>
                       <td className="no-print py-3 px-3 text-center">
-                        <button
-                          onClick={() => {
-                            setEditingKKE(item);
-                            setKkePilihan(item.pilihan);
-                            setKkeCatatan(item.catatanTimSAKIP);
-                            setKkeRekomendasi(item.rekomendasiPerbaikan);
-                            setKkeLinkEvidence(item.linkEvidence || '');
-                            setKkeTautanDokumenId(item.tautanDokumenId || '');
-                            setKkeUploadedFileName(item.uploadedFileName);
-                            setKkeUploadedFileSize(item.uploadedFileSize);
-                            setKkeUploadedFileType(item.uploadedFileType);
-                            setKkeUploadedFileDataUrl(item.uploadedFileDataUrl);
-                          }}
-                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded"
-                          title="Input / Edit KKE PD & Link Evidence"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openUploadKKEModal(item)}
+                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                            title="Upload Dokumen Evidence untuk KKE PD Ini"
+                          >
+                            <UploadCloud className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingKKE(item);
+                              setKkePilihan(item.pilihan);
+                              setKkeCatatan(item.catatanTimSAKIP);
+                              setKkeRekomendasi(item.rekomendasiPerbaikan);
+                              setKkeLinkEvidence(item.linkEvidence || '');
+                              setKkeTautanDokumenId(item.tautanDokumenId || '');
+                              setKkeUploadedFileName(item.uploadedFileName);
+                              setKkeUploadedFileSize(item.uploadedFileSize);
+                              setKkeUploadedFileType(item.uploadedFileType);
+                              setKkeUploadedFileDataUrl(item.uploadedFileDataUrl);
+                            }}
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors cursor-pointer"
+                            title="Input / Edit KKE PD & Link Evidence"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1815,6 +2012,494 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                 >
                   Simpan Perubahan LKE
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Upload Dokumen Evidence Data LKE */}
+      {uploadLKEModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden border border-slate-200 text-xs animate-in fade-in zoom-in-95 duration-150 my-6">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-blue-700 to-indigo-800 text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <UploadCloud className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">
+                    Upload Dokumen Evidence LKE SAKIP
+                  </h3>
+                  <p className="text-[11px] text-blue-100">
+                    Daftar Parameter dan Indikator Uji LKE SAKIP 2024
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadLKEModalOpen(false)}
+                className="p-1.5 text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUploadLKEOk} className="p-5 space-y-4">
+              {/* Target Parameter Selector */}
+              <div>
+                <label className="block font-bold text-slate-800 mb-1.5 flex items-center justify-between">
+                  <span>Pilih Parameter / Indikator Uji LKE <span className="text-red-500">*</span></span>
+                  <span className="text-[10px] text-slate-500 font-normal">Pilih butir yang akan dilampirkan eviden</span>
+                </label>
+                <select
+                  value={selectedLKEForUploadId}
+                  onChange={(e) => {
+                    const found = lkeItems.find(i => i.id === e.target.value);
+                    if (found) {
+                      setSelectedLKEForUploadId(found.id);
+                      setModalLKELink(found.linkEvidence || '');
+                      setModalLKETautanDocId(found.tautanDokumenId || '');
+                      setModalLKEStatus(found.statusDukung);
+                      setModalLKECatatan(found.catatanEvaluator || '');
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  required
+                >
+                  {lkeItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      [{item.komponen}] {item.kriteria} - {item.parameter}
+                    </option>
+                  ))}
+                </select>
+
+                {(() => {
+                  const target = lkeItems.find(i => i.id === selectedLKEForUploadId);
+                  if (!target) return null;
+                  return (
+                    <div className="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-semibold text-slate-700">Komponen: {target.komponen} ({target.subkomponen})</span>
+                        <span className="font-bold text-blue-700">Bobot: {target.bobot}% | Skor: {target.nilai}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-600">
+                        <strong>Dokumen Terkait Wajib:</strong> {target.dokumenTerkait.join(', ')}
+                      </div>
+                      {target.uploadedFileName && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold pt-1 border-t border-slate-200">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Berkas saat ini: {target.uploadedFileName} ({target.uploadedFileSize || 'Ada'})</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Unggah Berkas Digital (File Upload) */}
+              <div className="p-3.5 bg-blue-50/50 rounded-xl border border-blue-200 space-y-2.5">
+                <label className="block font-bold text-blue-950 text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Upload className="w-4 h-4 text-blue-600" />
+                    <span>Upload Berkas Evidence Fisik</span>
+                  </span>
+                  <span className="text-[10px] text-blue-600 font-normal">Format: PDF, XLSX, DOCX, ZIP (Maks 15 MB)</span>
+                </label>
+
+                {modalLKEFile ? (
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-300 shadow-2xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileText className="w-5 h-5 text-blue-600 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 truncate max-w-[320px]">{modalLKEFile.name}</div>
+                        <div className="text-[10px] text-slate-400">
+                          {modalLKEFile.size > 1024*1024 ? `${(modalLKEFile.size/(1024*1024)).toFixed(1)} MB` : `${Math.round(modalLKEFile.size/1024)} KB`} · Siap diunggah
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setModalLKEFile(null)}
+                      className="px-2 py-1 text-[11px] text-red-600 hover:bg-red-50 rounded font-semibold transition-colors cursor-pointer"
+                    >
+                      Batal Pilih
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-5 bg-white border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-xl cursor-pointer transition-all text-center group shadow-2xs">
+                    <div className="p-2.5 bg-blue-50 rounded-full mb-2 group-hover:scale-110 transition-transform">
+                      <UploadCloud className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-800">Klik untuk Pilih Berkas atau Seret ke Sini</span>
+                    <span className="text-[11px] text-slate-500 mt-0.5">Mendukung dokumen resmi: *.pdf, *.xlsx, *.xls, *.docx, *.zip</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) {
+                          setModalLKEFile(f);
+                          setModalLKEStatus('Lengkap');
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Status Pemenuhan Eviden */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Status Pemenuhan Eviden
+                  </label>
+                  <select
+                    value={modalLKEStatus}
+                    onChange={(e) => setModalLKEStatus(e.target.value as any)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 bg-white"
+                  >
+                    <option value="Lengkap">✓ Lengkap Terunggah</option>
+                    <option value="Perlu Perbaikan">⚠ Perlu Perbaikan</option>
+                    <option value="Belum Lengkap">✕ Belum Lengkap</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Tautkan ke Dokumen SAKIP Internal
+                  </label>
+                  <select
+                    value={modalLKETautanDocId}
+                    onChange={(e) => setModalLKETautanDocId(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 bg-white"
+                  >
+                    <option value="">-- Tanpa Tautan Arsip --</option>
+                    {documents.map((doc) => (
+                      <option key={doc.id} value={doc.id}>
+                        [{doc.kategori}] {doc.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Link Evidence External */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Link Evidence Digital (URL External)</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Google Drive, Cloud Storage, atau Portal Pemkab</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/... atau https://transnaker.luwuutarakab.go.id/..."
+                    value={modalLKELink}
+                    onChange={(e) => setModalLKELink(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <LinkIcon className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" />
+                </div>
+              </div>
+
+              {/* Catatan Evaluator */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Catatan / Uraian Eviden
+                </label>
+                <textarea
+                  rows={2}
+                  value={modalLKECatatan}
+                  onChange={(e) => setModalLKECatatan(e.target.value)}
+                  placeholder="Contoh: Telah diverifikasi kesesuaian dokumen dengan target Renstra..."
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 resize-none text-xs"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+                <span className="text-[11px] text-slate-500">
+                  Data otomatis tersinkronisasi ke rekapitulasi penilaian.
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUploadLKEModalOpen(false)}
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-bold shadow-xs cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Simpan & Upload Evidence</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Upload Dokumen Evidence KKE PD */}
+      {uploadKKEModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden border border-slate-200 text-xs animate-in fade-in zoom-in-95 duration-150 my-6">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-blue-700 to-indigo-800 text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <UploadCloud className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">
+                    Upload Dokumen Evidence KKE PD
+                  </h3>
+                  <p className="text-[11px] text-blue-100">
+                    Instrumen Kertas Kerja Evaluasi Perangkat Daerah SAKIP 2024
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadKKEModalOpen(false)}
+                className="p-1.5 text-blue-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUploadKKEOk} className="p-5 space-y-4">
+              {/* Target KKE PD Selector */}
+              <div>
+                <label className="block font-bold text-slate-800 mb-1.5 flex items-center justify-between">
+                  <span>Pilih Butir Instrumen KKE PD <span className="text-red-500">*</span></span>
+                  <span className="text-[10px] text-slate-500 font-normal">Pilih indikator yang akan diunggah bukti dukung</span>
+                </label>
+                <select
+                  value={selectedKKEForUploadId}
+                  onChange={(e) => {
+                    const found = kkePdItems.find(i => i.id === e.target.value);
+                    if (found) {
+                      setSelectedKKEForUploadId(found.id);
+                      setModalKKELink(found.linkEvidence || '');
+                      setModalKKETautanDocId(found.tautanDokumenId || '');
+                      setModalKKEPilihan(found.pilihan);
+                      setModalKKECatatan(found.catatanTimSAKIP || '');
+                      setModalKKERekomendasi(found.rekomendasiPerbaikan || '');
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 bg-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  required
+                >
+                  {kkePdItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      [{item.kode}] {item.aspek} - {item.indikator}
+                    </option>
+                  ))}
+                </select>
+
+                {(() => {
+                  const target = kkePdItems.find(i => i.id === selectedKKEForUploadId);
+                  if (!target) return null;
+                  return (
+                    <div className="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-semibold text-slate-700">Kode: {target.kode} | Aspek: {target.aspek}</span>
+                        <span className="font-bold text-blue-700">Pilihan: {target.pilihan} (Skor: {target.skor})</span>
+                      </div>
+                      <div className="text-[11px] text-slate-600">
+                        <strong>Pertanyaan Evaluasi:</strong> {target.pertanyaan}
+                      </div>
+                      <div className="text-[11px] text-slate-600">
+                        <strong>Kriteria Data Dukung:</strong> {target.dataDukungDiunggah}
+                      </div>
+                      {target.uploadedFileName && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold pt-1 border-t border-slate-200">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Berkas saat ini: {target.uploadedFileName} ({target.uploadedFileSize || 'Ada'})</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Unggah Berkas Physical Upload */}
+              <div className="p-3.5 bg-blue-50/50 rounded-xl border border-blue-200 space-y-2.5">
+                <label className="block font-bold text-blue-950 text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Upload className="w-4 h-4 text-blue-600" />
+                    <span>Upload File Data Dukung KKE PD</span>
+                  </span>
+                  <span className="text-[10px] text-blue-600 font-normal">Format: PDF, Excel (.xlsx), Word, ZIP</span>
+                </label>
+
+                {modalKKEFile ? (
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-300 shadow-2xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileText className="w-5 h-5 text-blue-600 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 truncate max-w-[320px]">{modalKKEFile.name}</div>
+                        <div className="text-[10px] text-slate-400">
+                          {modalKKEFile.size > 1024*1024 ? `${(modalKKEFile.size/(1024*1024)).toFixed(1)} MB` : `${Math.round(modalKKEFile.size/1024)} KB`} · Siap diunggah
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setModalKKEFile(null)}
+                      className="px-2 py-1 text-[11px] text-red-600 hover:bg-red-50 rounded font-semibold transition-colors cursor-pointer"
+                    >
+                      Batal Pilih
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-5 bg-white border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-xl cursor-pointer transition-all text-center group shadow-2xs">
+                    <div className="p-2.5 bg-blue-50 rounded-full mb-2 group-hover:scale-110 transition-transform">
+                      <UploadCloud className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-800">Klik untuk Pilih Berkas Data Dukung atau Seret ke Sini</span>
+                    <span className="text-[11px] text-slate-500 mt-0.5">Format dokumen pendukung: PDF (*.pdf), Excel (*.xlsx), Word (*.docx), ZIP</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) {
+                          setModalKKEFile(f);
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Pilihan Pemenuhan Kriteria (A, B, C, D, E) */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1.5">
+                  Pilihan Pemenuhan Kriteria (Evaluasi Mandiri)
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {[
+                    { val: 'A', skor: 90, label: 'A (90)' },
+                    { val: 'B', skor: 80, label: 'B (80)' },
+                    { val: 'C', skor: 65, label: 'C (65)' },
+                    { val: 'D', skor: 50, label: 'D (50)' },
+                    { val: 'E', skor: 30, label: 'E (30)' },
+                  ].map((opt) => (
+                    <label
+                      key={opt.val}
+                      className={`flex flex-col items-center p-2 rounded-lg border cursor-pointer transition-all text-center ${
+                        modalKKEPilihan === opt.val
+                          ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="modalKKEPilihan"
+                        value={opt.val}
+                        checked={modalKKEPilihan === opt.val}
+                        onChange={() => setModalKKEPilihan(opt.val as any)}
+                        className="hidden"
+                      />
+                      <span className="text-sm font-bold">{opt.val}</span>
+                      <span className="text-[10px] opacity-80">Skor {opt.skor}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Link Evidence & Tautan Dokumen */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Tautkan ke Dokumen SAKIP
+                  </label>
+                  <select
+                    value={modalKKETautanDocId}
+                    onChange={(e) => setModalKKETautanDocId(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 bg-white"
+                  >
+                    <option value="">-- Tanpa Tautan Arsip --</option>
+                    {documents.map((doc) => (
+                      <option key={doc.id} value={doc.id}>
+                        [{doc.kategori}] {doc.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Link Evidence Digital (Google Drive / Web)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="url"
+                      placeholder="https://drive.google.com/..."
+                      value={modalKKELink}
+                      onChange={(e) => setModalKKELink(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                    <LinkIcon className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Catatan & Rekomendasi */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Catatan Tim SAKIP
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={modalKKECatatan}
+                    onChange={(e) => setModalKKECatatan(e.target.value)}
+                    placeholder="Catatan verifikasi eviden..."
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 resize-none text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Rekomendasi Tindak Lanjut
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={modalKKERekomendasi}
+                    onChange={(e) => setModalKKERekomendasi(e.target.value)}
+                    placeholder="Rekomendasi peningkatan nilai..."
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 resize-none text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+                <span className="text-[11px] text-slate-500">
+                  Data otomatis tersinkronisasi ke instrumen KKE PD.
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUploadKKEModalOpen(false)}
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1.5 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-bold shadow-xs cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Simpan & Upload Evidence</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>

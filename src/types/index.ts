@@ -157,6 +157,8 @@ export interface KomponenPenilaian {
 
 export interface LKEItem {
   id: string;
+  kode?: string;
+  noUrut?: number;
   komponen: string;
   subkomponen: string;
   kriteria: string;
@@ -164,6 +166,8 @@ export interface LKEItem {
   bobot: number;
   nilai: number; // 0 - 100
   nilaiAkhir: number;
+  unitJawaban?: string; // Jawaban predikat Unit/Satker, e.g. 'A', 'BB', 'B', 'CC', 'C'
+  unitNilai?: number; // Nilai capaian Unit/Satker dari lembar evaluasi
   statusDukung: 'Lengkap' | 'Belum Lengkap' | 'Perlu Perbaikan';
   dokumenTerkait: string[];
   linkEvidence?: string;

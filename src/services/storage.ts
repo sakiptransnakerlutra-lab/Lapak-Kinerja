@@ -61,10 +61,11 @@ export const StorageService = {
       if (!getItem<any>(KEYS.IKK, null)) {
         setItem(KEYS.IKK, INITIAL_IKK);
       }
-      if (!getItem<any>(KEYS.PENILAIAN, null)) {
+      if (!getItem<any>(KEYS.PENILAIAN, null) || (getItem<any[]>(KEYS.PENILAIAN, []).length !== INITIAL_KOMPONEN_PENILAIAN.length)) {
         setItem(KEYS.PENILAIAN, INITIAL_KOMPONEN_PENILAIAN);
       }
-      if (!getItem<any>(KEYS.LKE, null)) {
+      const existingLKE = getItem<any[]>(KEYS.LKE, []);
+      if (!existingLKE || existingLKE.length < INITIAL_LKE_ITEMS.length) {
         setItem(KEYS.LKE, INITIAL_LKE_ITEMS);
       }
       if (!getItem<any>(KEYS.KKE_PD, null)) {

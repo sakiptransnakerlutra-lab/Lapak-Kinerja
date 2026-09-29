@@ -74,8 +74,10 @@ export const STRUKTUR_ORGANISASI_TRANSNAKER: StrukturOrganisasiInfo[] = [
 
 export interface User {
   id: string;
+  userId: string;
   name: string;
   email: string;
+  password?: string;
   role: UserRole;
   bidang: UnitKerjaTransnaker | string;
   nip?: string;

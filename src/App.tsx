@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ShieldAlert } from 'lucide-react';
 import { StorageService } from './services/storage';
 import { 
   User, 
@@ -47,6 +48,13 @@ export default function App() {
   // Modal States
   const [previewDoc, setPreviewDoc] = useState<SakipDocument | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  // Guard user-management: only admin can access
+  useEffect(() => {
+    if (activeMenu === 'user-management' && currentUser?.role !== 'admin') {
+      setActiveMenu('dashboard-ikp');
+    }
+  }, [activeMenu, currentUser]);
 
   // Sync state helpers
   const handleSaveIKP = (item: IKPItem) => {
@@ -258,9 +266,30 @@ export default function App() {
           )}
 
           {activeMenu === 'user-management' && (
-            <UserManagementView
-              currentUser={currentUser}
-            />
+            currentUser?.role === 'admin' ? (
+              <UserManagementView
+                currentUser={currentUser}
+              />
+            ) : (
+              <div className="bg-white p-8 rounded-xl border border-red-200 text-center max-w-lg mx-auto my-12 shadow-2xs">
+                <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                  <ShieldAlert className="w-7 h-7" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-1">
+                  Akses Terbatas Khusus Administrator
+                </h3>
+                <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+                  Menu <strong>Kelola Operator</strong> hanya dapat diakses oleh akun dengan hak akses <strong>Administrator SAKIP</strong> Dinas Transmigrasi dan Tenaga Kerja.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveMenu('dashboard-ikp')}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-xs"
+                >
+                  Kembali ke Dashboard IKP
+                </button>
+              </div>
+            )
           )}
         </main>
       </div>

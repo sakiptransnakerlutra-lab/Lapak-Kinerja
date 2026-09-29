@@ -82,22 +82,31 @@ export const StorageService = {
     setItem(KEYS.CURRENT_USER, user);
   },
 
-  login(email: string, password: string): { success: boolean; message: string; user?: User } {
+  login(identifier: string, password: string): { success: boolean; message: string; user?: User } {
     this.init();
     const users = getItem<any[]>(KEYS.USERS, INITIAL_USERS);
-    const normalizedEmail = email.trim().toLowerCase();
-    const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
+    const normalized = identifier.trim().toLowerCase();
+    const user = users.find(u => {
+      const matchEmail = u.email && u.email.toLowerCase() === normalized;
+      const matchUserId = u.userId && u.userId.toLowerCase() === normalized;
+      const init = INITIAL_USERS.find(i => i.id === u.id);
+      const matchInitUserId = init?.userId && init.userId.toLowerCase() === normalized;
+      return matchEmail || matchUserId || matchInitUserId;
+    });
 
     if (!user) {
-      return { success: false, message: 'Email tidak terdaftar pada sistem LAPAK KINERJA.' };
+      return { success: false, message: 'User ID atau Email tidak terdaftar pada sistem LAPAK KINERJA.' };
     }
 
-    if (user.passwordHash !== password) {
+    const init = INITIAL_USERS.find(i => i.id === user.id);
+    const expectedPassword = user.password || user.passwordHash || init?.password || init?.passwordHash;
+    if (expectedPassword !== password) {
       return { success: false, message: 'Kata sandi tidak sesuai. Silakan coba kembali.' };
     }
 
     const authUser: User = {
       id: user.id,
+      userId: user.userId || init?.userId || user.email.split('@')[0],
       name: user.name,
       email: user.email,
       role: user.role,
@@ -111,43 +120,6 @@ export const StorageService = {
     return { success: true, message: 'Login berhasil!', user: authUser };
   },
 
-  register(data: { name: string; email: string; password: string; bidang: string; nip?: string; role?: 'admin' | 'operator' }): { success: boolean; message: string; user?: User } {
-    this.init();
-    const users = getItem<any[]>(KEYS.USERS, INITIAL_USERS);
-    const normalizedEmail = data.email.trim().toLowerCase();
-
-    if (users.some(u => u.email.toLowerCase() === normalizedEmail)) {
-      return { success: false, message: 'Email ini sudah terdaftar. Silakan gunakan email lain atau login.' };
-    }
-
-    const newUser = {
-      id: 'user-' + Date.now(),
-      name: data.name.trim(),
-      email: normalizedEmail,
-      passwordHash: data.password,
-      role: data.role || 'operator',
-      bidang: data.bidang || 'Sekretariat Dinas',
-      nip: data.nip || '-',
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-
-    users.push(newUser);
-    setItem(KEYS.USERS, users);
-
-    const authUser: User = {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      bidang: newUser.bidang,
-      nip: newUser.nip,
-      createdAt: newUser.createdAt,
-    };
-
-    this.setCurrentUser(authUser);
-    return { success: true, message: 'Pendaftaran akun berhasil!', user: authUser };
-  },
-
   logout(): void {
     localStorage.removeItem(KEYS.CURRENT_USER);
   },
@@ -155,30 +127,93 @@ export const StorageService = {
   getAllUsers(): User[] {
     this.init();
     const users = getItem<any[]>(KEYS.USERS, INITIAL_USERS);
-    return users.map(({ passwordHash, ...rest }) => rest);
+    return users.map((u) => {
+      const init = INITIAL_USERS.find(i => i.id === u.id);
+      const userId = u.userId || init?.userId || (u.email ? u.email.split('@')[0] : 'user');
+      const password = u.password || u.passwordHash || init?.password || 'operator123';
+      return {
+        id: u.id,
+        userId,
+        name: u.name,
+        email: u.email,
+        password,
+        role: u.role,
+        bidang: u.bidang,
+        nip: u.nip,
+        avatarUrl: u.avatarUrl,
+        createdAt: u.createdAt,
+      };
+    });
   },
 
-  createOperator(data: { name: string; email: string; password: string; bidang: string; nip?: string; role: 'admin' | 'operator' }): { success: boolean; message: string } {
+  createOperator(data: { userId: string; name: string; email: string; password: string; bidang: string; nip?: string; role: 'admin' | 'operator' }): { success: boolean; message: string } {
     this.init();
     const users = getItem<any[]>(KEYS.USERS, INITIAL_USERS);
-    if (users.some(u => u.email.toLowerCase() === data.email.trim().toLowerCase())) {
+    const normalizedUserId = data.userId.trim().toLowerCase();
+    const normalizedEmail = data.email.trim().toLowerCase();
+
+    if (users.some(u => (u.userId && u.userId.toLowerCase() === normalizedUserId))) {
+      return { success: false, message: 'User ID sudah digunakan oleh pengguna lain. Silakan gunakan User ID lain.' };
+    }
+
+    if (users.some(u => u.email.toLowerCase() === normalizedEmail)) {
       return { success: false, message: 'Email sudah terdaftar.' };
     }
 
     const newUser = {
       id: 'user-' + Date.now(),
-      name: data.name,
-      email: data.email.trim().toLowerCase(),
-      passwordHash: data.password || 'operator123',
+      userId: normalizedUserId,
+      name: data.name.trim(),
+      email: normalizedEmail,
+      password: data.password.trim(),
+      passwordHash: data.password.trim(),
       role: data.role,
       bidang: data.bidang,
-      nip: data.nip || '-',
+      nip: data.nip?.trim() || '-',
       createdAt: new Date().toISOString().split('T')[0],
     };
 
     users.push(newUser);
     setItem(KEYS.USERS, users);
-    return { success: true, message: `Akun ${data.role === 'admin' ? 'Administrator' : 'Operator'} berhasil dibuat.` };
+    return { success: true, message: `Akun ${data.role === 'admin' ? 'Administrator' : 'Operator'} "${newUser.userId}" berhasil dibuat.` };
+  },
+
+  updateOperator(data: { id: string; userId: string; name: string; email: string; password: string; bidang: string; nip?: string; role: 'admin' | 'operator' }): { success: boolean; message: string } {
+    this.init();
+    const users = getItem<any[]>(KEYS.USERS, INITIAL_USERS);
+    const normalizedUserId = data.userId.trim().toLowerCase();
+    const normalizedEmail = data.email.trim().toLowerCase();
+
+    // Check conflict with other users
+    const conflictUserId = users.find(u => u.id !== data.id && u.userId && u.userId.toLowerCase() === normalizedUserId);
+    if (conflictUserId) {
+      return { success: false, message: 'User ID sudah digunakan oleh pengguna lain.' };
+    }
+
+    const conflictEmail = users.find(u => u.id !== data.id && u.email.toLowerCase() === normalizedEmail);
+    if (conflictEmail) {
+      return { success: false, message: 'Email sudah digunakan oleh pengguna lain.' };
+    }
+
+    const index = users.findIndex(u => u.id === data.id);
+    if (index === -1) {
+      return { success: false, message: 'Pengguna tidak ditemukan.' };
+    }
+
+    users[index] = {
+      ...users[index],
+      userId: normalizedUserId,
+      name: data.name.trim(),
+      email: normalizedEmail,
+      password: data.password.trim(),
+      passwordHash: data.password.trim(),
+      role: data.role,
+      bidang: data.bidang,
+      nip: data.nip?.trim() || '-',
+    };
+
+    setItem(KEYS.USERS, users);
+    return { success: true, message: `Data akun "${normalizedUserId}" berhasil diperbarui.` };
   },
 
   deleteUser(userId: string): { success: boolean; message: string } {

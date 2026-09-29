@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { IKPItem, User, STRUKTUR_ORGANISASI_TRANSNAKER } from '../types';
 import { PrintHeader, PrintSignature } from '../components/PrintHeader';
+import { ExportDropdown } from '../components/ExportDropdown';
+import { exportIKPToExcel, exportIKPToCSV } from '../utils/exportUtils';
 
 interface DashboardIKPViewProps {
   items: IKPItem[];
@@ -147,19 +149,20 @@ export const DashboardIKPView: React.FC<DashboardIKPViewProps> = ({
     setIsModalOpen(false);
   };
 
-  const exportCSV = () => {
-    const headers = ['Kode,Sasaran Program,Indikator Kinerja,Satuan,Target Tahunan,Realisasi TW1,Realisasi TW2,Realisasi TW3,Realisasi TW4,Capaian Akhir (%),Status,Penanggung Jawab'];
-    const rows = filteredItems.map(i => 
-      `"${i.kode}","${i.sasaranProgram}","${i.indikator}","${i.satuan}",${i.targetTahunan},${i.realisasiTW1},${i.realisasiTW2},${i.realisasiTW3},${i.realisasiTW4},${i.capaianAkhir},"${i.status}","${i.penanggungJawab}"`
-    );
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers, ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Capaian_IKP_Transnaker_Luwu_Utara_${selectedYear}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleExportExcel = () => {
+    exportIKPToExcel(filteredItems, {
+      year: selectedYear,
+      statusFilter,
+      searchQuery,
+    });
+  };
+
+  const handleExportCSV = () => {
+    exportIKPToCSV(filteredItems, {
+      year: selectedYear,
+      statusFilter,
+      searchQuery,
+    });
   };
 
   return (
@@ -206,18 +209,17 @@ export const DashboardIKPView: React.FC<DashboardIKPViewProps> = ({
 
         {/* Action buttons */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={exportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors"
-            title="Ekspor ke Excel / CSV"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Ekspor CSV</span>
-          </button>
+          <ExportDropdown
+            label="Ekspor IKP"
+            itemCount={filteredItems.length}
+            onExportExcel={handleExportExcel}
+            onExportCSV={handleExportCSV}
+            dataName="IKP (Program)"
+          />
           
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5 text-slate-500" />
             <span>Cetak</span>

@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { IKKItem, User, STRUKTUR_ORGANISASI_TRANSNAKER, UnitKerjaTransnaker } from '../types';
 import { PrintHeader, PrintSignature } from '../components/PrintHeader';
+import { ExportDropdown } from '../components/ExportDropdown';
+import { exportIKKToExcel, exportIKKToCSV } from '../utils/exportUtils';
 
 interface DashboardIKKViewProps {
   items: IKKItem[];
@@ -130,19 +132,20 @@ export const DashboardIKKView: React.FC<DashboardIKKViewProps> = ({
     setIsModalOpen(false);
   };
 
-  const exportCSV = () => {
-    const headers = ['Kode,Bidang,Program,Kegiatan,Indikator Kegiatan,Satuan,Target,Realisasi,Capaian (%),Pagu Anggaran,Realisasi Anggaran,Penanggung Jawab'];
-    const rows = filteredItems.map(i => 
-      `"${i.kode}","${i.bidang}","${i.program}","${i.kegiatan}","${i.indikatorKegiatan}","${i.satuan}",${i.target},${i.realisasi},${i.persenCapaian},${i.anggaran},${i.realisasiAnggaran},"${i.penanggungJawab}"`
-    );
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers, ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Capaian_IKK_Transnaker_Luwu_Utara_${selectedYear}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleExportExcel = () => {
+    exportIKKToExcel(filteredItems, {
+      year: selectedYear,
+      bidangFilter: selectedBidang,
+      searchQuery,
+    });
+  };
+
+  const handleExportCSV = () => {
+    exportIKKToCSV(filteredItems, {
+      year: selectedYear,
+      bidangFilter: selectedBidang,
+      searchQuery,
+    });
   };
 
   return (
@@ -191,12 +194,20 @@ export const DashboardIKKView: React.FC<DashboardIKKViewProps> = ({
 
         {/* Action buttons */}
         <div className="flex items-center gap-2">
+          <ExportDropdown
+            label="Ekspor IKK"
+            itemCount={filteredItems.length}
+            onExportExcel={handleExportExcel}
+            onExportCSV={handleExportCSV}
+            dataName="IKK (Kegiatan)"
+          />
+
           <button
-            onClick={exportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors"
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Ekspor CSV</span>
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
+            <span>Cetak</span>
           </button>
           
           <button

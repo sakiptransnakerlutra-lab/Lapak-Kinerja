@@ -1,5 +1,5 @@
 import React from 'react';
-import logoLuwuUtaraTransparent from '../assets/images/logo_luwu_utara_transparent.png';
+import logoLuwuUtara from '../assets/images/Luwu_Utara_Logo_(North_Luwu).png';
 
 interface AppLogoProps {
   className?: string;
@@ -12,23 +12,24 @@ export const AppLogo: React.FC<AppLogoProps> = ({
   size = 'md',
   showText = false,
 }) => {
-  // Dimension classes matching government shield proportions (approx 1:1.3 ratio)
+  // Height sizing for the official logo to preserve original proportions (400:483) without stretching
   const sizeClasses = {
-    sm: 'w-7 h-9',
-    md: 'w-10 h-13',
-    lg: 'w-16 h-21',
-    xl: 'w-24 h-31',
+    sm: 'h-8 w-auto',
+    md: 'h-11 w-auto',
+    lg: 'h-16 w-auto',
+    xl: 'h-24 w-auto',
   }[size];
 
   return (
     <div className={`inline-flex items-center gap-2.5 ${className}`}>
-      <div className={`${sizeClasses} shrink-0 relative flex items-center justify-center`}>
-        {/* Official Kabupaten Luwu Utara Coat of Arms - 100% Transparent Background */}
+      <div className="shrink-0 flex items-center justify-center">
+        {/* Logo Lambang Resmi Pemerintah Kabupaten Luwu Utara */}
         <img
-          src={logoLuwuUtaraTransparent}
+          src={logoLuwuUtara}
           alt="Lambang Resmi Pemerintah Kabupaten Luwu Utara"
-          className="w-full h-full object-contain filter drop-shadow-md select-none"
+          className={`${sizeClasses} max-w-none object-contain select-none`}
           loading="eager"
+          style={{ imageRendering: 'auto' }}
         />
       </div>
 

@@ -16,7 +16,12 @@ import {
   Shield,
   X,
   Link as LinkIcon,
-  FolderOpen
+  FolderOpen,
+  Upload,
+  Eye,
+  Trash2,
+  Sparkles,
+  Paperclip
 } from 'lucide-react';
 import { ActiveMenu, LKEItem, KKEPDItem, SakipDocument, User } from '../types';
 import { PrintHeader, PrintSignature } from '../components/PrintHeader';
@@ -53,6 +58,10 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
   const [kkeRekomendasi, setKkeRekomendasi] = useState('');
   const [kkeLinkEvidence, setKkeLinkEvidence] = useState('');
   const [kkeTautanDokumenId, setKkeTautanDokumenId] = useState('');
+  const [kkeUploadedFileName, setKkeUploadedFileName] = useState<string | undefined>(undefined);
+  const [kkeUploadedFileSize, setKkeUploadedFileSize] = useState<string | undefined>(undefined);
+  const [kkeUploadedFileType, setKkeUploadedFileType] = useState<string | undefined>(undefined);
+  const [kkeUploadedFileDataUrl, setKkeUploadedFileDataUrl] = useState<string | undefined>(undefined);
 
   // Modal for editing LKE
   const [editingLKE, setEditingLKE] = useState<LKEItem | null>(null);
@@ -61,6 +70,18 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
   const [lkeCatatan, setLkeCatatan] = useState('');
   const [lkeLinkEvidence, setLkeLinkEvidence] = useState('');
   const [lkeTautanDokumenId, setLkeTautanDokumenId] = useState('');
+  const [lkeUploadedFileName, setLkeUploadedFileName] = useState<string | undefined>(undefined);
+  const [lkeUploadedFileSize, setLkeUploadedFileSize] = useState<string | undefined>(undefined);
+  const [lkeUploadedFileType, setLkeUploadedFileType] = useState<string | undefined>(undefined);
+  const [lkeUploadedFileDataUrl, setLkeUploadedFileDataUrl] = useState<string | undefined>(undefined);
+
+  // Toast notification
+  const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'info' } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'info' = 'success') => {
+    setToastMsg({ text, type });
+    setTimeout(() => setToastMsg(null), 3500);
+  };
 
   const isAdmin = currentUser?.role === 'admin';
 
@@ -79,6 +100,165 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
       if (match) return match;
     }
     return undefined;
+  };
+
+  // Direct File Upload for LKE Item
+  const handleLKEFileUpload = (e: React.ChangeEvent<HTMLInputElement>, item: LKEItem) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const sizeStr = file.size > 1024 * 1024 
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(file.size / 1024)} KB`;
+
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+
+      const updated: LKEItem = {
+        ...item,
+        uploadedFileName: file.name,
+        uploadedFileSize: sizeStr,
+        uploadedFileType: ext,
+        uploadedFileDataUrl: dataUrl,
+        uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        uploadedBy: currentUser?.name || 'Operator SAKIP',
+        statusDukung: 'Lengkap',
+      };
+
+      onSaveLKE(updated);
+      showToast(`Dokumen eviden "${file.name}" berhasil diunggah!`);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemoveLKEUploadedFile = (item: LKEItem) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus dokumen eviden "${item.uploadedFileName}"?`)) {
+      const updated: LKEItem = {
+        ...item,
+        uploadedFileName: undefined,
+        uploadedFileSize: undefined,
+        uploadedFileType: undefined,
+        uploadedFileDataUrl: undefined,
+        uploadedAt: undefined,
+        uploadedBy: undefined,
+        statusDukung: item.linkEvidence || item.tautanDokumenId ? 'Lengkap' : 'Belum Lengkap',
+      };
+      onSaveLKE(updated);
+      showToast('Dokumen eviden berhasil dihapus.', 'info');
+    }
+  };
+
+  const handleDownloadLKEFile = (item: LKEItem) => {
+    if (!item.uploadedFileName) return;
+    const link = document.createElement('a');
+    link.href = item.uploadedFileDataUrl || '#';
+    link.download = item.uploadedFileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePreviewLKEFile = (item: LKEItem) => {
+    if (!item.uploadedFileName) return;
+    if (onViewDocPreview) {
+      onViewDocPreview({
+        id: `lke-upload-${item.id}`,
+        title: item.kriteria,
+        kategori: 'MONEV',
+        tahun: 2024,
+        bidang: 'Sekretariat Dinas',
+        fileName: item.uploadedFileName,
+        fileType: (item.uploadedFileType as any) || 'pdf',
+        fileSize: item.uploadedFileSize || '1 MB',
+        uploadedBy: item.uploadedBy || currentUser?.name || 'Operator SAKIP',
+        uploadedAt: item.uploadedAt || new Date().toISOString().split('T')[0],
+        deskripsi: `Dokumen eviden data dukung LKE: ${item.parameter}`,
+        statusVerifikasi: 'Terverifikasi',
+      });
+    }
+  };
+
+  // Direct File Upload for KKE PD Item
+  const handleKKEFileUpload = (e: React.ChangeEvent<HTMLInputElement>, item: KKEPDItem) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const sizeStr = file.size > 1024 * 1024 
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(file.size / 1024)} KB`;
+
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+
+      const updated: KKEPDItem = {
+        ...item,
+        dataDukungDiunggah: file.name,
+        uploadedFileName: file.name,
+        uploadedFileSize: sizeStr,
+        uploadedFileType: ext,
+        uploadedFileDataUrl: dataUrl,
+        uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        uploadedBy: currentUser?.name || 'Operator SAKIP',
+      };
+
+      onSaveKKEPD(updated);
+      showToast(`Dokumen data dukung "${file.name}" berhasil diunggah untuk ${item.kode}!`);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemoveKKEUploadedFile = (item: KKEPDItem) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus dokumen eviden "${item.uploadedFileName || item.dataDukungDiunggah}"?`)) {
+      const updated: KKEPDItem = {
+        ...item,
+        uploadedFileName: undefined,
+        uploadedFileSize: undefined,
+        uploadedFileType: undefined,
+        uploadedFileDataUrl: undefined,
+        uploadedAt: undefined,
+        uploadedBy: undefined,
+      };
+      onSaveKKEPD(updated);
+      showToast('Dokumen eviden berhasil dihapus.', 'info');
+    }
+  };
+
+  const handleDownloadKKEFile = (item: KKEPDItem) => {
+    const fileName = item.uploadedFileName || item.dataDukungDiunggah;
+    if (!fileName) return;
+    const link = document.createElement('a');
+    link.href = item.uploadedFileDataUrl || '#';
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePreviewKKEFile = (item: KKEPDItem) => {
+    const fileName = item.uploadedFileName || item.dataDukungDiunggah;
+    if (!fileName) return;
+    if (onViewDocPreview) {
+      onViewDocPreview({
+        id: `kke-upload-${item.id}`,
+        title: item.indikator,
+        kategori: 'MONEV',
+        tahun: 2024,
+        bidang: 'Sekretariat Dinas',
+        fileName: fileName,
+        fileType: (item.uploadedFileType as any) || 'pdf',
+        fileSize: item.uploadedFileSize || '1.5 MB',
+        uploadedBy: item.uploadedBy || currentUser?.name || 'Operator SAKIP',
+        uploadedAt: item.uploadedAt || new Date().toISOString().split('T')[0],
+        deskripsi: `Dokumen eviden data dukung KKE PD: ${item.pertanyaan}`,
+        statusVerifikasi: 'Terverifikasi',
+      });
+    }
   };
 
   // Sub-navigation tab list
@@ -110,10 +290,18 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
       rekomendasiPerbaikan: kkeRekomendasi,
       linkEvidence: kkeLinkEvidence.trim() || undefined,
       tautanDokumenId: kkeTautanDokumenId.trim() || undefined,
+      dataDukungDiunggah: kkeUploadedFileName || editingKKE.dataDukungDiunggah,
+      uploadedFileName: kkeUploadedFileName,
+      uploadedFileSize: kkeUploadedFileSize,
+      uploadedFileType: kkeUploadedFileType,
+      uploadedFileDataUrl: kkeUploadedFileDataUrl,
+      uploadedAt: kkeUploadedFileName ? (editingKKE.uploadedAt || new Date().toISOString().replace('T', ' ').substring(0, 16)) : undefined,
+      uploadedBy: kkeUploadedFileName ? (editingKKE.uploadedBy || currentUser?.name || 'Operator SAKIP') : undefined,
     };
 
     onSaveKKEPD(updated);
     setEditingKKE(null);
+    showToast(`Data KKE PD ${updated.kode} berhasil diperbarui.`);
   };
 
   const handleLKEEditSubmit = (e: React.FormEvent) => {
@@ -125,14 +313,21 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
       ...editingLKE,
       nilai: lkeNilai,
       nilaiAkhir: computedAkhir,
-      statusDukung: lkeStatusDukung,
+      statusDukung: lkeUploadedFileName ? 'Lengkap' : lkeStatusDukung,
       catatanEvaluator: lkeCatatan,
       linkEvidence: lkeLinkEvidence.trim() || undefined,
       tautanDokumenId: lkeTautanDokumenId.trim() || undefined,
+      uploadedFileName: lkeUploadedFileName,
+      uploadedFileSize: lkeUploadedFileSize,
+      uploadedFileType: lkeUploadedFileType,
+      uploadedFileDataUrl: lkeUploadedFileDataUrl,
+      uploadedAt: lkeUploadedFileName ? (editingLKE.uploadedAt || new Date().toISOString().replace('T', ' ').substring(0, 16)) : undefined,
+      uploadedBy: lkeUploadedFileName ? (editingLKE.uploadedBy || currentUser?.name || 'Operator SAKIP') : undefined,
     };
 
     onSaveLKE(updated);
     setEditingLKE(null);
+    showToast(`Parameter LKE berhasil diperbarui.`);
   };
 
   return (
@@ -302,50 +497,163 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                     <th className="py-3 px-3 text-center border-r border-slate-200">Bobot (%)</th>
                     <th className="py-3 px-3 text-center border-r border-slate-200">Nilai Capaian</th>
                     <th className="py-3 px-3 text-center border-r border-slate-200">Nilai Tertimbang</th>
-                    <th className="py-3 px-4">Status Pemenuhan Dokumen Pendukung</th>
+                    <th className="py-3 px-4 border-r border-slate-200">Status Pemenuhan Dokumen Pendukung</th>
+                    <th className="py-3 px-3 border-r border-slate-200 min-w-[220px] text-blue-900 bg-blue-50/60 font-bold">
+                      <div className="flex items-center gap-1.5">
+                        <Upload className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Upload Dokumen Eviden</span>
+                      </div>
+                    </th>
+                    <th className="no-print py-3 px-3 text-center w-16">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  <tr>
-                    <td className="py-2.5 px-3 text-center font-mono text-slate-500 border-r border-slate-200">1</td>
-                    <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">Perencanaan Kinerja</td>
-                    <td className="py-2.5 px-3 text-center font-mono border-r border-slate-200">30%</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-800 border-r border-slate-200">82.50</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-blue-600 border-r border-slate-200">24.75</td>
-                    <td className="py-2.5 px-4 text-emerald-700 font-medium">✓ Renstra, IKU, dan PK 2024 Lengkap Terunggah</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 px-3 text-center font-mono text-slate-500 border-r border-slate-200">2</td>
-                    <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">Pengukuran Kinerja</td>
-                    <td className="py-2.5 px-3 text-center font-mono border-r border-slate-200">30%</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-800 border-r border-slate-200">79.00</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-blue-600 border-r border-slate-200">23.70</td>
-                    <td className="py-2.5 px-4 text-emerald-700 font-medium">✓ Manual IKU dan Formulir Kendali Triwulanan Lengkap</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 px-3 text-center font-mono text-slate-500 border-r border-slate-200">3</td>
-                    <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">Pelaporan Kinerja</td>
-                    <td className="py-2.5 px-3 text-center font-mono border-r border-slate-200">15%</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-800 border-r border-slate-200">81.00</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-blue-600 border-r border-slate-200">12.15</td>
-                    <td className="py-2.5 px-4 text-emerald-700 font-medium">✓ LKjIP Tahun 2023 Terarsip dan Telah Direviu</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 px-3 text-center font-mono text-slate-500 border-r border-slate-200">4</td>
-                    <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">Evaluasi Internal</td>
-                    <td className="py-2.5 px-3 text-center font-mono border-r border-slate-200">10%</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-800 border-r border-slate-200">76.50</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-blue-600 border-r border-slate-200">7.65</td>
-                    <td className="py-2.5 px-4 text-amber-700 font-medium">⚠ Notulensi Monev TW II Perlu Melampirkan Lembar RTL</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 px-3 text-center font-mono text-slate-500 border-r border-slate-200">5</td>
-                    <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">Capaian Kinerja</td>
-                    <td className="py-2.5 px-3 text-center font-mono border-r border-slate-200">15%</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-800 border-r border-slate-200">82.00</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-blue-600 border-r border-slate-200">12.30</td>
-                    <td className="py-2.5 px-4 text-emerald-700 font-medium">✓ Realisasi Output BLK dan Mediasi HI Mencapai Target</td>
-                  </tr>
+                  {[
+                    {
+                      no: 1,
+                      nama: 'Perencanaan Kinerja',
+                      bobot: '30%',
+                      capaian: '82.50',
+                      tertimbang: '24.75',
+                      status: '✓ Renstra, IKU, dan PK 2024 Lengkap Terunggah',
+                      statusClass: 'text-emerald-700 font-medium',
+                      item: lkeItems.find(i => i.komponen === 'Perencanaan Kinerja')
+                    },
+                    {
+                      no: 2,
+                      nama: 'Pengukuran Kinerja',
+                      bobot: '30%',
+                      capaian: '79.00',
+                      tertimbang: '23.70',
+                      status: '✓ Manual IKU dan Formulir Kendali Triwulanan Lengkap',
+                      statusClass: 'text-emerald-700 font-medium',
+                      item: lkeItems.find(i => i.komponen === 'Pengukuran Kinerja')
+                    },
+                    {
+                      no: 3,
+                      nama: 'Pelaporan Kinerja',
+                      bobot: '15%',
+                      capaian: '81.00',
+                      tertimbang: '12.15',
+                      status: '✓ LKjIP Tahun 2023 Terarsip dan Telah Direviu',
+                      statusClass: 'text-emerald-700 font-medium',
+                      item: lkeItems.find(i => i.komponen === 'Pelaporan Kinerja')
+                    },
+                    {
+                      no: 4,
+                      nama: 'Evaluasi Internal',
+                      bobot: '10%',
+                      capaian: '76.50',
+                      tertimbang: '7.65',
+                      status: '⚠ Notulensi Monev TW II Perlu Melampirkan Lembar RTL',
+                      statusClass: 'text-amber-700 font-medium',
+                      item: lkeItems.find(i => i.komponen === 'Evaluasi Internal')
+                    },
+                    {
+                      no: 5,
+                      nama: 'Capaian Kinerja',
+                      bobot: '15%',
+                      capaian: '82.00',
+                      tertimbang: '12.30',
+                      status: '✓ Realisasi Output BLK dan Mediasi HI Mencapai Target',
+                      statusClass: 'text-emerald-700 font-medium',
+                      item: lkeItems.find(i => i.komponen === 'Capaian Kinerja')
+                    },
+                  ].map((row) => (
+                    <tr key={row.no} className="hover:bg-slate-50/70">
+                      <td className="py-2.5 px-3 text-center font-mono text-slate-500 border-r border-slate-200">{row.no}</td>
+                      <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">{row.nama}</td>
+                      <td className="py-2.5 px-3 text-center font-mono border-r border-slate-200">{row.bobot}</td>
+                      <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-800 border-r border-slate-200">{row.capaian}</td>
+                      <td className="py-2.5 px-3 text-center font-mono font-bold text-blue-600 border-r border-slate-200">{row.tertimbang}</td>
+                      <td className={`py-2.5 px-4 border-r border-slate-200 ${row.statusClass}`}>{row.status}</td>
+                      
+                      {/* Kolom Upload Dokumen Eviden */}
+                      <td className="py-2.5 px-3 border-r border-slate-200 bg-blue-50/15">
+                        {row.item?.uploadedFileName ? (
+                          <div className="p-2 bg-white rounded-lg border border-blue-200 shadow-2xs space-y-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                <span className="font-semibold text-slate-900 text-xs truncate max-w-[130px]" title={row.item.uploadedFileName}>
+                                  {row.item.uploadedFileName}
+                                </span>
+                              </div>
+                              <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-blue-100 text-blue-800 font-bold shrink-0">
+                                {row.item.uploadedFileType || 'FILE'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100">
+                              <span>{row.item.uploadedFileSize || 'Berkas'}</span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handlePreviewLKEFile(row.item!)}
+                                  className="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+                                  title="Pratinjau Dokumen"
+                                >
+                                  Lihat
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadLKEFile(row.item!)}
+                                  className="text-emerald-600 hover:text-emerald-800 font-semibold cursor-pointer"
+                                  title="Unduh Berkas"
+                                >
+                                  Unduh
+                                </button>
+                                <label className="text-slate-500 hover:text-blue-600 font-semibold cursor-pointer" title="Ganti File">
+                                  Ganti
+                                  <input
+                                    type="file"
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                                    className="hidden"
+                                    onChange={(e) => handleLKEFileUpload(e, row.item!)}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        ) : row.item ? (
+                          <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-900 border border-blue-200 hover:border-blue-300 rounded-md text-[11px] font-bold cursor-pointer transition-colors shadow-2xs group">
+                            <Upload className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                            <span>Unggah Eviden</span>
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                              className="hidden"
+                              onChange={(e) => handleLKEFileUpload(e, row.item!)}
+                            />
+                          </label>
+                        ) : (
+                          <span className="text-slate-400 italic text-[11px]">-</span>
+                        )}
+                      </td>
+
+                      <td className="no-print py-2.5 px-3 text-center">
+                        {row.item && (
+                          <button
+                            onClick={() => {
+                              setEditingLKE(row.item!);
+                              setLkeNilai(row.item!.nilai);
+                              setLkeStatusDukung(row.item!.statusDukung);
+                              setLkeCatatan(row.item!.catatanEvaluator);
+                              setLkeLinkEvidence(row.item!.linkEvidence || '');
+                              setLkeTautanDokumenId(row.item!.tautanDokumenId || '');
+                              setLkeUploadedFileName(row.item!.uploadedFileName);
+                              setLkeUploadedFileSize(row.item!.uploadedFileSize);
+                              setLkeUploadedFileType(row.item!.uploadedFileType);
+                              setLkeUploadedFileDataUrl(row.item!.uploadedFileDataUrl);
+                            }}
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded"
+                            title="Edit Komponen & Eviden LKE"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                   <tr className="bg-slate-100 font-bold">
                     <td colSpan={2} className="py-3 px-4 text-slate-900 border-r border-slate-200 uppercase">
                       Total Capaian Nilai SAKIP 2024
@@ -353,9 +661,13 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                     <td className="py-3 px-3 text-center font-mono border-r border-slate-200">100%</td>
                     <td className="py-3 px-3 text-center font-mono text-slate-900 border-r border-slate-200">-</td>
                     <td className="py-3 px-3 text-center font-mono text-blue-700 text-sm border-r border-slate-200">80.50</td>
-                    <td className="py-3 px-4 text-emerald-800">
+                    <td className="py-3 px-4 border-r border-slate-200 text-emerald-800">
                       PREDIKAT: <span className="bg-emerald-600 text-white px-2 py-0.5 rounded ml-1">A (MEMUASKAN)</span>
                     </td>
+                    <td className="py-3 px-3 border-r border-slate-200 text-slate-600 text-center font-normal text-[11px]">
+                      5 Berkas Lengkap Terlampir
+                    </td>
+                    <td className="no-print py-3 px-3 text-center"></td>
                   </tr>
                 </tbody>
               </table>
@@ -396,8 +708,21 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                     <th className="py-3 px-2 text-center border-r border-slate-200 w-14">Skor</th>
                     <th className="py-3 px-2 text-center border-r border-slate-200 w-14">Nilai</th>
                     <th className="py-3 px-3 border-r border-slate-200 w-28 text-center">Status Eviden</th>
-                    <th className="py-3 px-3 border-r border-slate-200 min-w-[200px] text-blue-900 bg-blue-50/50">Link Evidence</th>
-                    <th className="py-3 px-4 border-r border-slate-200 min-w-[170px]">Catatan Evaluasi</th>
+                    {/* Kolom Upload Dokumen Eviden */}
+                    <th className="py-3 px-3 border-r border-slate-200 min-w-[210px] text-blue-900 bg-blue-50/60 font-bold">
+                      <div className="flex items-center gap-1.5">
+                        <Upload className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Upload Dokumen Eviden</span>
+                      </div>
+                    </th>
+                    {/* Kolom Link Evidence */}
+                    <th className="py-3 px-3 border-r border-slate-200 min-w-[170px] text-emerald-900 bg-emerald-50/40">
+                      <div className="flex items-center gap-1.5">
+                        <LinkIcon className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Link Evidence</span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4 border-r border-slate-200 min-w-[160px]">Catatan Evaluasi</th>
                     <th className="no-print py-3 px-3 text-center w-16">Aksi</th>
                   </tr>
                 </thead>
@@ -411,6 +736,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                       item.kriteria.toLowerCase().includes(q) ||
                       item.parameter.toLowerCase().includes(q) ||
                       (item.linkEvidence && item.linkEvidence.toLowerCase().includes(q)) ||
+                      (item.uploadedFileName && item.uploadedFileName.toLowerCase().includes(q)) ||
                       item.dokumenTerkait.some(d => d.toLowerCase().includes(q))
                     );
                   }).map((item) => (
@@ -448,8 +774,107 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                           {item.statusDukung}
                         </span>
                       </td>
-                      {/* Kolom Link Evidence */}
+
+                      {/* Kolom Upload Dokumen Eviden */}
                       <td className="py-3 px-3 border-r border-slate-200 bg-blue-50/20">
+                        {item.uploadedFileName ? (
+                          <div className="p-2 bg-white rounded-lg border border-blue-200 shadow-2xs space-y-1.5">
+                            <div className="flex items-start justify-between gap-1.5">
+                              <div className="flex items-start gap-1.5 min-w-0">
+                                <FileText className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-slate-900 text-xs truncate max-w-[130px]" title={item.uploadedFileName}>
+                                    {item.uploadedFileName}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {item.uploadedFileSize || 'Berkas'} · {item.uploadedAt?.split(' ')[0] || 'Tersimpan'}
+                                  </div>
+                                </div>
+                              </div>
+                              <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-blue-100 text-blue-800 font-bold shrink-0">
+                                {item.uploadedFileType || 'FILE'}
+                              </span>
+                            </div>
+
+                            <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handlePreviewLKEFile(item)}
+                                className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                                title="Lihat / Pratinjau Dokumen"
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>Lihat</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadLKEFile(item)}
+                                className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 hover:text-emerald-800 cursor-pointer"
+                                title="Unduh Berkas"
+                              >
+                                <Download className="w-3 h-3" />
+                                <span>Unduh</span>
+                              </button>
+
+                              <label
+                                className="text-[10px] text-slate-500 hover:text-blue-600 cursor-pointer p-0.5"
+                                title="Ganti File Dokumen"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                                  className="hidden"
+                                  onChange={(e) => handleLKEFileUpload(e, item)}
+                                />
+                              </label>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLKEUploadedFile(item)}
+                                className="text-[10px] text-red-500 hover:text-red-700 p-0.5 cursor-pointer"
+                                title="Hapus Dokumen Eviden"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-900 border border-blue-200 hover:border-blue-300 rounded-md text-[11px] font-bold cursor-pointer transition-colors shadow-2xs group">
+                              <Upload className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                              <span>Unggah Dokumen</span>
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                                className="hidden"
+                                onChange={(e) => handleLKEFileUpload(e, item)}
+                              />
+                            </label>
+                            
+                            {(() => {
+                              const linked = findLinkedDoc(item.tautanDokumenId, item.dokumenTerkait);
+                              if (linked) {
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => onViewDocPreview && onViewDocPreview(linked)}
+                                    className="text-[10px] text-slate-500 hover:text-blue-600 truncate max-w-[170px] block cursor-pointer text-left"
+                                    title={`Tersambung ke arsip: ${linked.title}`}
+                                  >
+                                    📄 {linked.fileName}
+                                  </button>
+                                );
+                              }
+                              return <div className="text-[10px] text-slate-400">PDF, Excel, Word, ZIP</div>;
+                            })()}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Kolom Link Evidence */}
+                      <td className="py-3 px-3 border-r border-slate-200 bg-emerald-50/15">
                         {(() => {
                           const linkedDoc = findLinkedDoc(item.tautanDokumenId, item.dokumenTerkait);
                           const hasExternal = Boolean(item.linkEvidence);
@@ -467,6 +892,10 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                                     setLkeCatatan(item.catatanEvaluator);
                                     setLkeLinkEvidence(item.linkEvidence || '');
                                     setLkeTautanDokumenId(item.tautanDokumenId || '');
+                                    setLkeUploadedFileName(item.uploadedFileName);
+                                    setLkeUploadedFileSize(item.uploadedFileSize);
+                                    setLkeUploadedFileType(item.uploadedFileType);
+                                    setLkeUploadedFileDataUrl(item.uploadedFileDataUrl);
                                   }}
                                   className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold hover:underline"
                                   title="Tambah Link Evidence"
@@ -533,6 +962,10 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                             setLkeCatatan(item.catatanEvaluator);
                             setLkeLinkEvidence(item.linkEvidence || '');
                             setLkeTautanDokumenId(item.tautanDokumenId || '');
+                            setLkeUploadedFileName(item.uploadedFileName);
+                            setLkeUploadedFileSize(item.uploadedFileSize);
+                            setLkeUploadedFileType(item.uploadedFileType);
+                            setLkeUploadedFileDataUrl(item.uploadedFileDataUrl);
                           }}
                           className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded"
                           title="Perbarui Penilaian & Link Evidence LKE"
@@ -584,11 +1017,25 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   <tr className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                     <th className="py-3 px-3 w-16 text-center border-r border-slate-200">Kode</th>
                     <th className="py-3 px-3 border-r border-slate-200 w-32">Aspek Evaluasi</th>
-                    <th className="py-3 px-4 border-r border-slate-200 min-w-[220px]">Pertanyaan & Indikator Uji</th>
+                    <th className="py-3 px-4 border-r border-slate-200 min-w-[200px]">Pertanyaan & Indikator Uji</th>
                     <th className="py-3 px-2 text-center border-r border-slate-200 w-12">Pilihan</th>
-                    <th className="py-3 px-2.5 text-center border-r border-slate-200 w-16">Skor</th>
-                    <th className="py-3 px-4 border-r border-slate-200 min-w-[180px]">Data Dukung Diunggah</th>
-                    <th className="py-3 px-4 border-r border-slate-200 min-w-[180px]">Catatan / Rekomendasi SAKIP</th>
+                    <th className="py-3 px-2.5 text-center border-r border-slate-200 w-14">Skor</th>
+                    <th className="py-3 px-3 border-r border-slate-200 min-w-[150px]">Kriteria Data Dukung</th>
+                    {/* Kolom Upload Dokumen Eviden */}
+                    <th className="py-3 px-3 border-r border-slate-200 min-w-[210px] text-blue-900 bg-blue-50/60 font-bold">
+                      <div className="flex items-center gap-1.5">
+                        <Upload className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Upload Dokumen Eviden</span>
+                      </div>
+                    </th>
+                    {/* Kolom Link Evidence */}
+                    <th className="py-3 px-3 border-r border-slate-200 min-w-[170px] text-emerald-900 bg-emerald-50/40">
+                      <div className="flex items-center gap-1.5">
+                        <LinkIcon className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Link Evidence</span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4 border-r border-slate-200 min-w-[160px]">Catatan / Rekomendasi SAKIP</th>
                     <th className="no-print py-3 px-3 text-center w-16">Aksi</th>
                   </tr>
                 </thead>
@@ -611,22 +1058,132 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                       <td className="py-3 px-2.5 text-center font-mono font-bold text-slate-800 border-r border-slate-200">
                         {item.skor}
                       </td>
-                      <td className="py-3 px-4 border-r border-slate-200">
-                        <div className="text-slate-800 font-medium flex items-center gap-1.5 mb-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>{item.dataDukungDiunggah}</span>
+
+                      {/* Kolom Kriteria Data Dukung */}
+                      <td className="py-3 px-3 border-r border-slate-200">
+                        <div className="flex items-start gap-1.5 text-slate-800">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span className="font-medium text-xs leading-relaxed">{item.dataDukungDiunggah}</span>
                         </div>
-                        {/* Link Evidence Interactive Buttons */}
+                      </td>
+
+                      {/* Kolom Upload Dokumen Eviden */}
+                      <td className="py-3 px-3 border-r border-slate-200 bg-blue-50/20">
+                        {item.uploadedFileName ? (
+                          <div className="p-2 bg-white rounded-lg border border-blue-200 shadow-2xs space-y-1.5">
+                            <div className="flex items-start justify-between gap-1.5">
+                              <div className="flex items-start gap-1.5 min-w-0">
+                                <FileText className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-slate-900 text-xs truncate max-w-[130px]" title={item.uploadedFileName}>
+                                    {item.uploadedFileName}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {item.uploadedFileSize || 'Berkas'} · {item.uploadedAt?.split(' ')[0] || 'Tersimpan'}
+                                  </div>
+                                </div>
+                              </div>
+                              <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-blue-100 text-blue-800 font-bold shrink-0">
+                                {item.uploadedFileType || 'FILE'}
+                              </span>
+                            </div>
+
+                            <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handlePreviewKKEFile(item)}
+                                className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                                title="Lihat / Pratinjau Dokumen"
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>Lihat</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadKKEFile(item)}
+                                className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 hover:text-emerald-800 cursor-pointer"
+                                title="Unduh Berkas"
+                              >
+                                <Download className="w-3 h-3" />
+                                <span>Unduh</span>
+                              </button>
+
+                              <label
+                                className="text-[10px] text-slate-500 hover:text-blue-600 cursor-pointer p-0.5"
+                                title="Ganti File Dokumen"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                                  className="hidden"
+                                  onChange={(e) => handleKKEFileUpload(e, item)}
+                                />
+                              </label>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveKKEUploadedFile(item)}
+                                className="text-[10px] text-red-500 hover:text-red-700 p-0.5 cursor-pointer"
+                                title="Hapus Dokumen Eviden"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-900 border border-blue-200 hover:border-blue-300 rounded-md text-[11px] font-bold cursor-pointer transition-colors shadow-2xs group">
+                              <Upload className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                              <span>Unggah Dokumen</span>
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                                className="hidden"
+                                onChange={(e) => handleKKEFileUpload(e, item)}
+                              />
+                            </label>
+                            <div className="text-[10px] text-slate-400">PDF, Excel, Word, ZIP</div>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Kolom Link Evidence */}
+                      <td className="py-3 px-3 border-r border-slate-200 bg-emerald-50/15">
                         {(() => {
                           const linkedDoc = findLinkedDoc(item.tautanDokumenId);
                           const hasExternal = Boolean(item.linkEvidence);
 
                           if (!linkedDoc && !hasExternal) {
-                            return null;
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] text-slate-400 italic">Belum ada link</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingKKE(item);
+                                    setKkePilihan(item.pilihan);
+                                    setKkeCatatan(item.catatanTimSAKIP);
+                                    setKkeRekomendasi(item.rekomendasiPerbaikan);
+                                    setKkeLinkEvidence(item.linkEvidence || '');
+                                    setKkeTautanDokumenId(item.tautanDokumenId || '');
+                                    setKkeUploadedFileName(item.uploadedFileName);
+                                    setKkeUploadedFileSize(item.uploadedFileSize);
+                                    setKkeUploadedFileType(item.uploadedFileType);
+                                    setKkeUploadedFileDataUrl(item.uploadedFileDataUrl);
+                                  }}
+                                  className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold hover:underline"
+                                  title="Tambah Link Evidence"
+                                >
+                                  + Tautkan
+                                </button>
+                              </div>
+                            );
                           }
 
                           return (
-                            <div className="flex flex-col gap-1 mt-1">
+                            <div className="space-y-1.5">
                               {linkedDoc && (
                                 <button
                                   type="button"
@@ -664,6 +1221,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                           );
                         })()}
                       </td>
+
                       <td className="py-3 px-4 border-r border-slate-200 text-slate-600 text-[11px]">
                         <div><strong>Catatan:</strong> {item.catatanTimSAKIP}</div>
                         <div className="text-blue-700 mt-1"><strong>Rekomendasi:</strong> {item.rekomendasiPerbaikan}</div>
@@ -677,6 +1235,10 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                             setKkeRekomendasi(item.rekomendasiPerbaikan);
                             setKkeLinkEvidence(item.linkEvidence || '');
                             setKkeTautanDokumenId(item.tautanDokumenId || '');
+                            setKkeUploadedFileName(item.uploadedFileName);
+                            setKkeUploadedFileSize(item.uploadedFileSize);
+                            setKkeUploadedFileType(item.uploadedFileType);
+                            setKkeUploadedFileDataUrl(item.uploadedFileDataUrl);
                           }}
                           className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded"
                           title="Input / Edit KKE PD & Link Evidence"
@@ -867,6 +1429,85 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                 />
               </div>
 
+              {/* Unggah Dokumen Eviden Langsung KKE PD */}
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-blue-950 text-xs flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Upload File Data Dukung (.pdf, .xlsx, .docx, .zip)</span>
+                  </label>
+                  {kkeUploadedFileName && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setKkeUploadedFileName(undefined);
+                        setKkeUploadedFileSize(undefined);
+                        setKkeUploadedFileType(undefined);
+                        setKkeUploadedFileDataUrl(undefined);
+                      }}
+                      className="text-[10px] text-red-600 hover:underline cursor-pointer"
+                    >
+                      Hapus Berkas
+                    </button>
+                  )}
+                </div>
+
+                {kkeUploadedFileName ? (
+                  <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-blue-200 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-900 truncate max-w-[240px]">{kkeUploadedFileName}</div>
+                        <div className="text-[10px] text-slate-400">{kkeUploadedFileSize || 'Berkas Terlampir'}</div>
+                      </div>
+                    </div>
+                    <label className="text-[10px] text-blue-600 font-semibold hover:underline cursor-pointer px-2 py-1 bg-blue-50 rounded">
+                      Ganti
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          const r = new FileReader();
+                          r.onload = () => {
+                            setKkeUploadedFileName(f.name);
+                            setKkeUploadedFileSize(f.size > 1024*1024 ? `${(f.size/(1024*1024)).toFixed(1)} MB` : `${Math.round(f.size/1024)} KB`);
+                            setKkeUploadedFileType(f.name.split('.').pop()?.toLowerCase() || 'pdf');
+                            setKkeUploadedFileDataUrl(r.result as string);
+                          };
+                          r.readAsDataURL(f);
+                        }}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-3.5 bg-white border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-lg cursor-pointer transition-colors text-center group">
+                    <Upload className="w-5 h-5 text-blue-500 mb-1 group-hover:scale-110 transition-transform" />
+                    <span className="text-xs font-semibold text-slate-700">Pilih Berkas Dokumen Pendukung</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">Format: PDF, Excel (.xlsx), Word (.docx), ZIP</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const r = new FileReader();
+                        r.onload = () => {
+                          setKkeUploadedFileName(f.name);
+                          setKkeUploadedFileSize(f.size > 1024*1024 ? `${(f.size/(1024*1024)).toFixed(1)} MB` : `${Math.round(f.size/1024)} KB`);
+                          setKkeUploadedFileType(f.name.split('.').pop()?.toLowerCase() || 'pdf');
+                          setKkeUploadedFileDataUrl(r.result as string);
+                        };
+                        r.readAsDataURL(f);
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+
               {/* Tautan Dokumen SAKIP Internal */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
@@ -977,6 +1618,87 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                     <option value="Belum Lengkap">Belum Lengkap</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Unggah Dokumen Eviden Langsung */}
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-blue-950 text-xs flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Upload File Dokumen Eviden (.pdf, .xlsx, .docx, .zip)</span>
+                  </label>
+                  {lkeUploadedFileName && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLkeUploadedFileName(undefined);
+                        setLkeUploadedFileSize(undefined);
+                        setLkeUploadedFileType(undefined);
+                        setLkeUploadedFileDataUrl(undefined);
+                      }}
+                      className="text-[10px] text-red-600 hover:underline cursor-pointer"
+                    >
+                      Hapus Berkas
+                    </button>
+                  )}
+                </div>
+
+                {lkeUploadedFileName ? (
+                  <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-blue-200 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-900 truncate max-w-[240px]">{lkeUploadedFileName}</div>
+                        <div className="text-[10px] text-slate-400">{lkeUploadedFileSize || 'Berkas Terlampir'}</div>
+                      </div>
+                    </div>
+                    <label className="text-[10px] text-blue-600 font-semibold hover:underline cursor-pointer px-2 py-1 bg-blue-50 rounded">
+                      Ganti
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          const r = new FileReader();
+                          r.onload = () => {
+                            setLkeUploadedFileName(f.name);
+                            setLkeUploadedFileSize(f.size > 1024*1024 ? `${(f.size/(1024*1024)).toFixed(1)} MB` : `${Math.round(f.size/1024)} KB`);
+                            setLkeUploadedFileType(f.name.split('.').pop()?.toLowerCase() || 'pdf');
+                            setLkeUploadedFileDataUrl(r.result as string);
+                            setLkeStatusDukung('Lengkap');
+                          };
+                          r.readAsDataURL(f);
+                        }}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-3.5 bg-white border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-lg cursor-pointer transition-colors text-center group">
+                    <Upload className="w-5 h-5 text-blue-500 mb-1 group-hover:scale-110 transition-transform" />
+                    <span className="text-xs font-semibold text-slate-700">Pilih Berkas Dokumen Eviden</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">Format: PDF, Excel (.xlsx), Word (.docx), ZIP (Maks 15MB)</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const r = new FileReader();
+                        r.onload = () => {
+                          setLkeUploadedFileName(f.name);
+                          setLkeUploadedFileSize(f.size > 1024*1024 ? `${(f.size/(1024*1024)).toFixed(1)} MB` : `${Math.round(f.size/1024)} KB`);
+                          setLkeUploadedFileType(f.name.split('.').pop()?.toLowerCase() || 'pdf');
+                          setLkeUploadedFileDataUrl(r.result as string);
+                          setLkeStatusDukung('Lengkap');
+                        };
+                        r.readAsDataURL(f);
+                      }}
+                    />
+                  </label>
+                )}
               </div>
 
               {/* Tautan Dokumen SAKIP Internal */}

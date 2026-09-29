@@ -168,6 +168,12 @@ export interface LKEItem {
   dokumenTerkait: string[];
   linkEvidence?: string;
   tautanDokumenId?: string;
+  uploadedFileName?: string;
+  uploadedFileSize?: string;
+  uploadedFileType?: string;
+  uploadedFileDataUrl?: string;
+  uploadedAt?: string;
+  uploadedBy?: string;
   catatanEvaluator: string;
 }
 
@@ -185,6 +191,12 @@ export interface KKEPDItem {
   dataDukungDiunggah: string;
   tautanDokumenId?: string;
   linkEvidence?: string;
+  uploadedFileName?: string;
+  uploadedFileSize?: string;
+  uploadedFileType?: string;
+  uploadedFileDataUrl?: string;
+  uploadedAt?: string;
+  uploadedBy?: string;
   catatanTimSAKIP: string;
   rekomendasiPerbaikan: string;
 }

@@ -296,6 +296,12 @@ export const StorageService = {
           ...item,
           linkEvidence: item.linkEvidence ?? initial.linkEvidence,
           tautanDokumenId: item.tautanDokumenId ?? initial.tautanDokumenId,
+          uploadedFileName: item.uploadedFileName ?? initial.uploadedFileName,
+          uploadedFileSize: item.uploadedFileSize ?? initial.uploadedFileSize,
+          uploadedFileType: item.uploadedFileType ?? initial.uploadedFileType,
+          uploadedFileDataUrl: item.uploadedFileDataUrl ?? initial.uploadedFileDataUrl,
+          uploadedAt: item.uploadedAt ?? initial.uploadedAt,
+          uploadedBy: item.uploadedBy ?? initial.uploadedBy,
         };
       }
       return item;
@@ -329,6 +335,12 @@ export const StorageService = {
           ...item,
           linkEvidence: item.linkEvidence ?? initial.linkEvidence,
           tautanDokumenId: item.tautanDokumenId ?? initial.tautanDokumenId,
+          uploadedFileName: item.uploadedFileName ?? initial.uploadedFileName,
+          uploadedFileSize: item.uploadedFileSize ?? initial.uploadedFileSize,
+          uploadedFileType: item.uploadedFileType ?? initial.uploadedFileType,
+          uploadedFileDataUrl: item.uploadedFileDataUrl ?? initial.uploadedFileDataUrl,
+          uploadedAt: item.uploadedAt ?? initial.uploadedAt,
+          uploadedBy: item.uploadedBy ?? initial.uploadedBy,
         };
       }
       return item;

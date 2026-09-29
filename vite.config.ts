@@ -7,21 +7,22 @@ import {defineConfig} from 'vite';
 export default defineConfig(({ command }) => {
   const rootDir = process.cwd();
 
-  // In development, base must always be '/' for Vite dev server and proxy to work properly
+  // In development, base must always be '/' for Vite dev server and proxy
   // In production build:
-  // 1. Explicit VITE_BASE_PATH if provided
+  // 1. Explicit VITE_BASE_PATH if provided (e.g. from actions/configure-pages)
   // 2. In GitHub Actions: extract repo name from GITHUB_REPOSITORY (e.g. 'owner/repo' -> '/repo/')
-  //    (if it's a user/org page like 'owner/owner.github.io', base is '/')
   // 3. Fallback to './' for local builds or relative deployments
   let basePath = '/';
   if (command === 'build') {
-    basePath = './';
     if (process.env.VITE_BASE_PATH) {
-      basePath = process.env.VITE_BASE_PATH;
+      const customPath = process.env.VITE_BASE_PATH.trim();
+      basePath = customPath.endsWith('/') ? customPath : `${customPath}/`;
     } else if (process.env.GITHUB_REPOSITORY) {
       const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
       const isUserPage = repo && owner && repo.toLowerCase() === `${owner.toLowerCase()}.github.io`;
       basePath = isUserPage ? '/' : `/${repo}/`;
+    } else {
+      basePath = './';
     }
   }
 
@@ -31,13 +32,26 @@ export default defineConfig(({ command }) => {
       react(), 
       tailwindcss(),
       {
-        name: 'generate-404-for-github-pages',
+        name: 'generate-github-pages-assets',
         closeBundle() {
           const distDir = path.resolve(rootDir, 'dist');
+          const docsDir = path.resolve(rootDir, 'docs');
           const indexPath = path.resolve(distDir, 'index.html');
           const fourOhFourPath = path.resolve(distDir, '404.html');
+
+          // 1. Generate 404.html for GitHub Pages SPA fallback
           if (fs.existsSync(indexPath)) {
             fs.copyFileSync(indexPath, fourOhFourPath);
+          }
+
+          // 2. Also sync to docs/ folder so GitHub Pages 'Deploy from branch -> /docs' works directly
+          try {
+            if (!fs.existsSync(docsDir)) {
+              fs.mkdirSync(docsDir, { recursive: true });
+            }
+            fs.cpSync(distDir, docsDir, { recursive: true });
+          } catch (err) {
+            // ignore
           }
         },
       },

@@ -51,26 +51,30 @@ function setItem<T>(key: string, value: T): void {
 export const StorageService = {
   // Auth & User Management
   init(): void {
-    if (!localStorage.getItem(KEYS.USERS)) {
-      setItem(KEYS.USERS, INITIAL_USERS);
-    }
-    if (!localStorage.getItem(KEYS.IKP)) {
-      setItem(KEYS.IKP, INITIAL_IKP);
-    }
-    if (!localStorage.getItem(KEYS.IKK)) {
-      setItem(KEYS.IKK, INITIAL_IKK);
-    }
-    if (!localStorage.getItem(KEYS.PENILAIAN)) {
-      setItem(KEYS.PENILAIAN, INITIAL_KOMPONEN_PENILAIAN);
-    }
-    if (!localStorage.getItem(KEYS.LKE)) {
-      setItem(KEYS.LKE, INITIAL_LKE_ITEMS);
-    }
-    if (!localStorage.getItem(KEYS.KKE_PD)) {
-      setItem(KEYS.KKE_PD, INITIAL_KKE_PD);
-    }
-    if (!localStorage.getItem(KEYS.DOCUMENTS)) {
-      setItem(KEYS.DOCUMENTS, INITIAL_DOCUMENTS);
+    try {
+      if (!getItem<any>(KEYS.USERS, null)) {
+        setItem(KEYS.USERS, INITIAL_USERS);
+      }
+      if (!getItem<any>(KEYS.IKP, null)) {
+        setItem(KEYS.IKP, INITIAL_IKP);
+      }
+      if (!getItem<any>(KEYS.IKK, null)) {
+        setItem(KEYS.IKK, INITIAL_IKK);
+      }
+      if (!getItem<any>(KEYS.PENILAIAN, null)) {
+        setItem(KEYS.PENILAIAN, INITIAL_KOMPONEN_PENILAIAN);
+      }
+      if (!getItem<any>(KEYS.LKE, null)) {
+        setItem(KEYS.LKE, INITIAL_LKE_ITEMS);
+      }
+      if (!getItem<any>(KEYS.KKE_PD, null)) {
+        setItem(KEYS.KKE_PD, INITIAL_KKE_PD);
+      }
+      if (!getItem<any>(KEYS.DOCUMENTS, null)) {
+        setItem(KEYS.DOCUMENTS, INITIAL_DOCUMENTS);
+      }
+    } catch (e) {
+      console.warn('Storage initialization fallback:', e);
     }
   },
 

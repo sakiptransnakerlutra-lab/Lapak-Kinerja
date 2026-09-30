@@ -61,6 +61,10 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
 }) => {
   // Modal for editing KKE PD
   const [editingKKE, setEditingKKE] = useState<KKEPDItem | null>(null);
+  const [kkeAspek, setKkeAspek] = useState('');
+  const [kkeIndikator, setKkeIndikator] = useState('');
+  const [kkePertanyaan, setKkePertanyaan] = useState('');
+  const [kkeDataDukung, setKkeDataDukung] = useState('');
   const [kkePilihan, setKkePilihan] = useState<'A' | 'B' | 'C' | 'D' | 'E'>('A');
   const [kkeCatatan, setKkeCatatan] = useState('');
   const [kkeRekomendasi, setKkeRekomendasi] = useState('');
@@ -73,6 +77,13 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
 
   // Modal for editing LKE
   const [editingLKE, setEditingLKE] = useState<LKEItem | null>(null);
+  const [lkeKomponen, setLkeKomponen] = useState('');
+  const [lkeSubkomponen, setLkeSubkomponen] = useState('');
+  const [lkeKriteria, setLkeKriteria] = useState('');
+  const [lkeParameter, setLkeParameter] = useState('');
+  const [lkeBobot, setLkeBobot] = useState<number>(1.0);
+  const [lkeUnitJawaban, setLkeUnitJawaban] = useState('');
+  const [lkeUnitNilai, setLkeUnitNilai] = useState<number | undefined>(undefined);
   const [lkeNilai, setLkeNilai] = useState<number>(80);
   const [lkeStatusDukung, setLkeStatusDukung] = useState<LKEItem['statusDukung']>('Lengkap');
   const [lkeCatatan, setLkeCatatan] = useState('');
@@ -110,6 +121,45 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
   };
 
   const isAdmin = currentUser?.role === 'admin';
+
+  // Helper to open LKE Edit Modal with full fields populated
+  const openEditLKE = (item: LKEItem) => {
+    setEditingLKE(item);
+    setLkeKomponen(item.komponen || '');
+    setLkeSubkomponen(item.subkomponen || '');
+    setLkeKriteria(item.kriteria || '');
+    setLkeParameter(item.parameter || '');
+    setLkeBobot(item.bobot || 1.0);
+    setLkeUnitJawaban(item.unitJawaban || '');
+    setLkeUnitNilai(item.unitNilai);
+    setLkeNilai(item.nilai || 0);
+    setLkeStatusDukung(item.statusDukung || 'Lengkap');
+    setLkeCatatan(item.catatanEvaluator || '');
+    setLkeLinkEvidence(item.linkEvidence || '');
+    setLkeTautanDokumenId(item.tautanDokumenId || '');
+    setLkeUploadedFileName(item.uploadedFileName);
+    setLkeUploadedFileSize(item.uploadedFileSize);
+    setLkeUploadedFileType(item.uploadedFileType);
+    setLkeUploadedFileDataUrl(item.uploadedFileDataUrl);
+  };
+
+  // Helper to open KKE PD Edit Modal with full fields populated
+  const openEditKKE = (item: KKEPDItem) => {
+    setEditingKKE(item);
+    setKkeAspek(item.aspek || '');
+    setKkeIndikator(item.indikator || '');
+    setKkePertanyaan(item.pertanyaan || '');
+    setKkeDataDukung(item.dataDukungDiunggah || '');
+    setKkePilihan(item.pilihan || 'A');
+    setKkeCatatan(item.catatanTimSAKIP || '');
+    setKkeRekomendasi(item.rekomendasiPerbaikan || '');
+    setKkeLinkEvidence(item.linkEvidence || '');
+    setKkeTautanDokumenId(item.tautanDokumenId || '');
+    setKkeUploadedFileName(item.uploadedFileName);
+    setKkeUploadedFileSize(item.uploadedFileSize);
+    setKkeUploadedFileType(item.uploadedFileType);
+    setKkeUploadedFileDataUrl(item.uploadedFileDataUrl);
+  };
 
   const filteredLKE = lkeItems.filter(item => {
     if (!searchQuery) return true;
@@ -456,13 +506,16 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
 
     const updated: KKEPDItem = {
       ...editingKKE,
+      aspek: kkeAspek.trim() || editingKKE.aspek,
+      indikator: kkeIndikator.trim() || editingKKE.indikator,
+      pertanyaan: kkePertanyaan.trim() || editingKKE.pertanyaan,
+      dataDukungDiunggah: kkeDataDukung.trim() || editingKKE.dataDukungDiunggah,
       pilihan: kkePilihan,
       skor: computedSkor,
       catatanTimSAKIP: kkeCatatan,
       rekomendasiPerbaikan: kkeRekomendasi,
       linkEvidence: kkeLinkEvidence.trim() || undefined,
       tautanDokumenId: kkeTautanDokumenId.trim() || undefined,
-      dataDukungDiunggah: kkeUploadedFileName || editingKKE.dataDukungDiunggah,
       uploadedFileName: kkeUploadedFileName,
       uploadedFileSize: kkeUploadedFileSize,
       uploadedFileType: kkeUploadedFileType,
@@ -473,16 +526,24 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
 
     onSaveKKEPD(updated);
     setEditingKKE(null);
-    showToast(`Data KKE PD ${updated.kode} berhasil diperbarui.`);
+    showToast(`Data KKE PD ${updated.kode} (${updated.aspek}) berhasil diperbarui.`);
   };
 
   const handleLKEEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingLKE) return;
 
-    const computedAkhir = Math.round(((lkeNilai * editingLKE.bobot) / 100) * 100) / 100;
+    const bobotVal = Number(lkeBobot) > 0 ? Number(lkeBobot) : editingLKE.bobot;
+    const computedAkhir = Math.round(((lkeNilai * bobotVal) / 100) * 100) / 100;
     const updated: LKEItem = {
       ...editingLKE,
+      komponen: lkeKomponen.trim() || editingLKE.komponen,
+      subkomponen: lkeSubkomponen.trim() || editingLKE.subkomponen,
+      kriteria: lkeKriteria.trim() || editingLKE.kriteria,
+      parameter: lkeParameter.trim() || editingLKE.parameter,
+      bobot: bobotVal,
+      unitJawaban: lkeUnitJawaban.trim() || editingLKE.unitJawaban,
+      unitNilai: lkeUnitNilai !== undefined ? Number(lkeUnitNilai) : editingLKE.unitNilai,
       nilai: lkeNilai,
       nilaiAkhir: computedAkhir,
       statusDukung: lkeUploadedFileName ? 'Lengkap' : lkeStatusDukung,
@@ -499,7 +560,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
 
     onSaveLKE(updated);
     setEditingLKE(null);
-    showToast(`Parameter LKE berhasil diperbarui.`);
+    showToast(`Komponen/Kriteria LKE berhasil diperbarui.`);
   };
 
   return (
@@ -837,7 +898,15 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                     <th className="py-3 px-3 border-r border-slate-200 w-12 text-center">No</th>
-                    <th className="py-3 px-4 border-r border-slate-200 min-w-[280px]">Komponen / Sub Komponen / Kriteria</th>
+                    <th className="py-3 px-4 border-r border-slate-200 min-w-[320px]">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span>Komponen / Sub Komponen / Kriteria</span>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-100/90 px-2 py-0.5 rounded shadow-2xs border border-blue-200 shrink-0">
+                          <Edit3 className="w-3 h-3 text-blue-600" />
+                          <span>Dapat Diedit</span>
+                        </span>
+                      </div>
+                    </th>
                     <th className="py-3 px-2 text-center border-r border-slate-200 w-16">Bobot</th>
                     <th className="py-3 px-2 text-center border-r border-slate-200 w-16 bg-blue-50/50">Unit/Satker Jawaban</th>
                     <th className="py-3 px-2 text-center border-r border-slate-200 w-16 bg-blue-50/50">Unit/Satker Nilai</th>
@@ -866,21 +935,45 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                       <td className="py-3 px-3 text-center font-mono text-slate-500 border-r border-slate-200 font-bold">
                         {item.noUrut ?? (index + 1)}
                       </td>
-                      <td className="py-3 px-4 border-r border-slate-200">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-slate-900 text-xs">{item.komponen}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
-                            {item.kode || 'LKE'}
-                          </span>
+                      <td 
+                        className="py-3 px-4 border-r border-slate-200 cursor-pointer group hover:bg-blue-50/50 transition-colors relative"
+                        onClick={() => openEditLKE(item)}
+                        title="Klik untuk Edit Komponen, Sub Komponen, dan Kriteria Parameter"
+                      >
+                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-slate-900 text-xs">{item.komponen}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono font-semibold">
+                              {item.kode || 'LKE'}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditLKE(item);
+                            }}
+                            className="text-[11px] px-2 py-0.5 rounded bg-blue-50 group-hover:bg-blue-600 text-blue-700 group-hover:text-white font-semibold flex items-center gap-1 transition-all border border-blue-200 group-hover:border-blue-600 shadow-2xs cursor-pointer"
+                            title="Edit Komponen, Sub Komponen & Kriteria"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
                         </div>
-                        <div className="text-[11px] text-blue-700 font-semibold mt-0.5">
+                        <div className="text-[11px] text-blue-700 font-semibold mt-1">
                           {item.subkomponen}
                         </div>
-                        <div className="text-xs text-slate-800 font-medium mt-1">
+                        {item.kriteria && item.kriteria !== item.subkomponen && (
+                          <div className="text-[11px] text-indigo-900 font-medium mt-0.5">
+                            <span className="text-slate-500 font-normal">Kriteria: </span>
+                            {item.kriteria}
+                          </div>
+                        )}
+                        <div className="text-xs text-slate-800 font-medium mt-1 leading-relaxed">
                           {item.parameter}
                         </div>
                         {item.dokumenTerkait && item.dokumenTerkait.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
+                          <div className="mt-1.5 flex flex-wrap gap-1">
                             {item.dokumenTerkait.map((doc, i) => (
                               <span key={i} className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">
                                 {doc}
@@ -1025,18 +1118,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                                 <span className="text-[11px] text-slate-400 italic">Belum ada link</span>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setEditingLKE(item);
-                                    setLkeNilai(item.nilai);
-                                    setLkeStatusDukung(item.statusDukung);
-                                    setLkeCatatan(item.catatanEvaluator);
-                                    setLkeLinkEvidence(item.linkEvidence || '');
-                                    setLkeTautanDokumenId(item.tautanDokumenId || '');
-                                    setLkeUploadedFileName(item.uploadedFileName);
-                                    setLkeUploadedFileSize(item.uploadedFileSize);
-                                    setLkeUploadedFileType(item.uploadedFileType);
-                                    setLkeUploadedFileDataUrl(item.uploadedFileDataUrl);
-                                  }}
+                                  onClick={() => openEditLKE(item)}
                                   className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold hover:underline"
                                   title="Tambah Link Evidence"
                                 >
@@ -1105,20 +1187,9 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              setEditingLKE(item);
-                              setLkeNilai(item.nilai);
-                              setLkeStatusDukung(item.statusDukung);
-                              setLkeCatatan(item.catatanEvaluator);
-                              setLkeLinkEvidence(item.linkEvidence || '');
-                              setLkeTautanDokumenId(item.tautanDokumenId || '');
-                              setLkeUploadedFileName(item.uploadedFileName);
-                              setLkeUploadedFileSize(item.uploadedFileSize);
-                              setLkeUploadedFileType(item.uploadedFileType);
-                              setLkeUploadedFileDataUrl(item.uploadedFileDataUrl);
-                            }}
-                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors cursor-pointer"
-                            title="Perbarui Penilaian & Link Evidence LKE"
+                            onClick={() => openEditLKE(item)}
+                            className="p-1.5 text-blue-600 hover:text-white hover:bg-blue-600 bg-blue-50 rounded transition-colors cursor-pointer border border-blue-200"
+                            title="Edit Komponen, Sub Komponen, Kriteria & Parameter LKE"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
@@ -1191,8 +1262,24 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                     <th className="py-3 px-3 w-16 text-center border-r border-slate-200">Kode</th>
-                    <th className="py-3 px-3 border-r border-slate-200 w-32">Aspek Evaluasi</th>
-                    <th className="py-3 px-4 border-r border-slate-200 min-w-[200px]">Pertanyaan & Indikator Uji</th>
+                    <th className="py-3 px-3 border-r border-slate-200 min-w-[160px]">
+                      <div className="flex items-center justify-between gap-1">
+                        <span>Aspek Evaluasi</span>
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-blue-700 bg-blue-100/90 px-1.5 py-0.5 rounded shadow-2xs border border-blue-200 shrink-0">
+                          <Edit3 className="w-2.5 h-2.5 text-blue-600" />
+                          <span>Dapat Diedit</span>
+                        </span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4 border-r border-slate-200 min-w-[260px]">
+                      <div className="flex items-center justify-between gap-1">
+                        <span>Pertanyaan & Indikator Uji</span>
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-blue-700 bg-blue-100/90 px-1.5 py-0.5 rounded shadow-2xs border border-blue-200 shrink-0">
+                          <Edit3 className="w-2.5 h-2.5 text-blue-600" />
+                          <span>Dapat Diedit</span>
+                        </span>
+                      </div>
+                    </th>
                     <th className="py-3 px-2 text-center border-r border-slate-200 w-12">Pilihan</th>
                     <th className="py-3 px-2.5 text-center border-r border-slate-200 w-14">Skor</th>
                     <th className="py-3 px-3 border-r border-slate-200 min-w-[150px]">Kriteria Data Dukung</th>
@@ -1220,12 +1307,48 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                       <td className="py-3 px-3 text-center font-mono font-semibold text-slate-600 border-r border-slate-200">
                         {item.kode}
                       </td>
-                      <td className="py-3 px-3 font-semibold text-slate-800 border-r border-slate-200">
-                        {item.aspek}
+                      <td 
+                        className="py-3 px-3 font-semibold text-slate-800 border-r border-slate-200 cursor-pointer group hover:bg-blue-50/50 transition-colors"
+                        onClick={() => openEditKKE(item)}
+                        title="Klik untuk Edit Aspek Evaluasi"
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs font-bold text-slate-900">{item.aspek}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditKKE(item);
+                            }}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 group-hover:bg-blue-600 text-blue-700 group-hover:text-white font-semibold flex items-center gap-0.5 transition-all border border-blue-200 group-hover:border-blue-600 shadow-2xs cursor-pointer shrink-0"
+                            title="Edit Aspek Evaluasi"
+                          >
+                            <Edit3 className="w-2.5 h-2.5" />
+                            <span>Edit</span>
+                          </button>
+                        </div>
                       </td>
-                      <td className="py-3 px-4 border-r border-slate-200">
-                        <div className="font-semibold text-slate-900">{item.indikator}</div>
-                        <div className="text-[11px] text-slate-600 mt-1">{item.pertanyaan}</div>
+                      <td 
+                        className="py-3 px-4 border-r border-slate-200 cursor-pointer group hover:bg-blue-50/50 transition-colors"
+                        onClick={() => openEditKKE(item)}
+                        title="Klik untuk Edit Pertanyaan & Indikator Uji"
+                      >
+                        <div className="flex items-start justify-between gap-1.5">
+                          <div className="font-bold text-slate-900 text-xs leading-snug">{item.indikator}</div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditKKE(item);
+                            }}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 group-hover:bg-blue-600 text-blue-700 group-hover:text-white font-semibold flex items-center gap-0.5 transition-all border border-blue-200 group-hover:border-blue-600 shadow-2xs cursor-pointer shrink-0"
+                            title="Edit Pertanyaan & Indikator Uji"
+                          >
+                            <Edit3 className="w-2.5 h-2.5" />
+                            <span>Edit</span>
+                          </button>
+                        </div>
+                        <div className="text-[11px] text-slate-600 mt-1 leading-relaxed">{item.pertanyaan}</div>
                       </td>
                       <td className="py-3 px-2 text-center font-bold text-blue-600 border-r border-slate-200 text-sm">
                         {item.pilihan}
@@ -1335,18 +1458,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                                 <span className="text-[11px] text-slate-400 italic">Belum ada link</span>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setEditingKKE(item);
-                                    setKkePilihan(item.pilihan);
-                                    setKkeCatatan(item.catatanTimSAKIP);
-                                    setKkeRekomendasi(item.rekomendasiPerbaikan);
-                                    setKkeLinkEvidence(item.linkEvidence || '');
-                                    setKkeTautanDokumenId(item.tautanDokumenId || '');
-                                    setKkeUploadedFileName(item.uploadedFileName);
-                                    setKkeUploadedFileSize(item.uploadedFileSize);
-                                    setKkeUploadedFileType(item.uploadedFileType);
-                                    setKkeUploadedFileDataUrl(item.uploadedFileDataUrl);
-                                  }}
+                                  onClick={() => openEditKKE(item)}
                                   className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold hover:underline"
                                   title="Tambah Link Evidence"
                                 >
@@ -1412,20 +1524,9 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              setEditingKKE(item);
-                              setKkePilihan(item.pilihan);
-                              setKkeCatatan(item.catatanTimSAKIP);
-                              setKkeRekomendasi(item.rekomendasiPerbaikan);
-                              setKkeLinkEvidence(item.linkEvidence || '');
-                              setKkeTautanDokumenId(item.tautanDokumenId || '');
-                              setKkeUploadedFileName(item.uploadedFileName);
-                              setKkeUploadedFileSize(item.uploadedFileSize);
-                              setKkeUploadedFileType(item.uploadedFileType);
-                              setKkeUploadedFileDataUrl(item.uploadedFileDataUrl);
-                            }}
-                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors cursor-pointer"
-                            title="Input / Edit KKE PD & Link Evidence"
+                            onClick={() => openEditKKE(item)}
+                            className="p-1.5 text-blue-600 hover:text-white hover:bg-blue-600 bg-blue-50 rounded transition-colors cursor-pointer border border-blue-200"
+                            title="Edit Aspek Evaluasi, Pertanyaan & Indikator Uji KKE PD"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
@@ -1523,25 +1624,100 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
 
       {/* Modal Edit KKE PD */}
       {editingKKE && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200 text-xs">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="text-sm font-bold text-slate-900">
-                Input Penilaian KKE PD: {editingKKE.kode}
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200 text-xs my-6">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-blue-700 to-indigo-800 text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Edit3 className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    Edit Aspek Evaluasi, Pertanyaan & Indikator Uji
+                  </h3>
+                  <p className="text-[11px] text-blue-100">
+                    Kertas Kerja Evaluasi (KKE PD) · Kode: {editingKKE.kode}
+                  </p>
+                </div>
+              </div>
               <button
+                type="button"
                 onClick={() => setEditingKKE(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg"
+                className="p-1.5 text-blue-100 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleKKEEditSubmit} className="p-5 space-y-4">
-              <div>
-                <span className="font-semibold text-slate-700 block">Indikator:</span>
-                <p className="text-slate-900 font-medium">{editingKKE.indikator}</p>
-                <p className="text-[11px] text-slate-500 mt-1">{editingKKE.pertanyaan}</p>
+            <form onSubmit={handleKKEEditSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+              {/* Field Aspek, Indikator, Pertanyaan & Kriteria Data Dukung */}
+              <div className="space-y-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="font-bold text-slate-800 text-xs flex items-center justify-between">
+                  <span>Aspek Evaluasi, Pertanyaan & Indikator Uji</span>
+                  <span className="text-[10px] text-blue-600 font-semibold">Dapat diedit langsung</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Aspek Evaluasi
+                  </label>
+                  <input
+                    type="text"
+                    list="aspek-options"
+                    value={kkeAspek}
+                    onChange={(e) => setKkeAspek(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 bg-white font-semibold"
+                    placeholder="Contoh: Perencanaan Kinerja"
+                    required
+                  />
+                  <datalist id="aspek-options">
+                    <option value="Perencanaan Kinerja" />
+                    <option value="Pengukuran Kinerja" />
+                    <option value="Pelaporan Kinerja" />
+                    <option value="Evaluasi Akuntabilitas Kinerja Internal" />
+                  </datalist>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Indikator Uji
+                  </label>
+                  <input
+                    type="text"
+                    value={kkeIndikator}
+                    onChange={(e) => setKkeIndikator(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 bg-white font-medium"
+                    placeholder="Contoh: Kesesuaian Tujuan dan Sasaran dengan Isu Strategis Daerah"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Pertanyaan Evaluasi
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={kkePertanyaan}
+                    onChange={(e) => setKkePertanyaan(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 bg-white resize-none"
+                    placeholder="Contoh: Apakah tujuan dan sasaran pada Renstra telah merespon isu strategis daerah?"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Kriteria Data Dukung Diperlukan
+                  </label>
+                  <input
+                    type="text"
+                    value={kkeDataDukung}
+                    onChange={(e) => setKkeDataDukung(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 bg-white"
+                    placeholder="Contoh: Dokumen Renstra 2021-2026 Bab IV & Bab V"
+                  />
+                </div>
               </div>
 
               <div>
@@ -1753,25 +1929,142 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
 
       {/* Modal Edit LKE Item */}
       {editingLKE && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200 text-xs">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="text-sm font-bold text-slate-900">
-                Update Parameter & Link Evidence LKE
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200 text-xs my-6">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-blue-700 to-indigo-800 text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Edit3 className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    Edit Komponen, Sub Komponen & Kriteria LKE
+                  </h3>
+                  <p className="text-[11px] text-blue-100">
+                    Lembar Kerja Evaluasi SAKIP · Kode: {editingLKE.kode || 'LKE'} (No Urut: {editingLKE.noUrut || '-'})
+                  </p>
+                </div>
+              </div>
               <button
+                type="button"
                 onClick={() => setEditingLKE(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg"
+                className="p-1.5 text-blue-100 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleLKEEditSubmit} className="p-5 space-y-4">
-              <div>
-                <span className="font-semibold text-slate-700 block">Kriteria:</span>
-                <p className="text-slate-900 font-medium">{editingLKE.kriteria}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">{editingLKE.parameter}</p>
+            <form onSubmit={handleLKEEditSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+              {/* Field Komponen, Sub Komponen, Kriteria & Parameter */}
+              <div className="space-y-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="font-bold text-slate-800 text-xs flex items-center justify-between">
+                  <span>Data Komponen / Sub Komponen / Kriteria</span>
+                  <span className="text-[10px] text-blue-600 font-semibold">Dapat diedit langsung</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Nama Komponen Utama
+                  </label>
+                  <input
+                    type="text"
+                    list="komponen-options"
+                    value={lkeKomponen}
+                    onChange={(e) => setLkeKomponen(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 font-semibold bg-white"
+                    placeholder="Contoh: PERENCANAAN KINERJA"
+                    required
+                  />
+                  <datalist id="komponen-options">
+                    <option value="PERENCANAAN KINERJA" />
+                    <option value="PENGUKURAN KINERJA" />
+                    <option value="PELAPORAN KINERJA" />
+                    <option value="EVALUASI AKUNTABILITAS KINERJA INTERNAL" />
+                  </datalist>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Sub Komponen
+                  </label>
+                  <input
+                    type="text"
+                    value={lkeSubkomponen}
+                    onChange={(e) => setLkeSubkomponen(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 bg-white"
+                    placeholder="Contoh: 1.a Dokumen Perencanaan kinerja telah tersedia"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Kriteria Evaluasi
+                  </label>
+                  <input
+                    type="text"
+                    value={lkeKriteria}
+                    onChange={(e) => setLkeKriteria(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 bg-white font-medium"
+                    placeholder="Contoh: Pedoman Teknis Perencanaan Kinerja"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Parameter & Indikator Uji
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={lkeParameter}
+                    onChange={(e) => setLkeParameter(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-slate-900 bg-white resize-none"
+                    placeholder="Contoh: Terdapat pedoman teknis perencanaan kinerja."
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Bobot (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={lkeBobot}
+                      onChange={(e) => setLkeBobot(Number(e.target.value))}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-slate-900 font-mono font-semibold bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Unit/Satker Jawaban
+                    </label>
+                    <input
+                      type="text"
+                      value={lkeUnitJawaban}
+                      onChange={(e) => setLkeUnitJawaban(e.target.value)}
+                      placeholder="BB, A, B, CC, C"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-slate-900 font-bold bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Unit/Satker Nilai
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={lkeUnitNilai !== undefined ? lkeUnitNilai : ''}
+                      onChange={(e) => setLkeUnitNilai(e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="Nilai Satker"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-slate-900 font-mono font-bold text-blue-700 bg-white"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

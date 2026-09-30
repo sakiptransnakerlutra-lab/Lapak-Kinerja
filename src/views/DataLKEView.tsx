@@ -681,12 +681,6 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                     <th className="py-3 px-3 text-center border-r border-slate-200">Nilai Capaian</th>
                     <th className="py-3 px-3 text-center border-r border-slate-200">Nilai Tertimbang</th>
                     <th className="py-3 px-4 border-r border-slate-200">Status Pemenuhan Dokumen Pendukung</th>
-                    <th className="py-3 px-3 border-r border-slate-200 min-w-[220px] text-blue-900 bg-blue-50/60 font-bold">
-                      <div className="flex items-center gap-1.5">
-                        <Upload className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Upload Dokumen Eviden</span>
-                      </div>
-                    </th>
                     <th className="no-print py-3 px-3 text-center w-16">Aksi</th>
                   </tr>
                 </thead>
@@ -694,53 +688,43 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   {[
                     {
                       no: 1,
-                      nama: 'Perencanaan Kinerja',
-                      bobot: '30%',
-                      capaian: '82.50',
-                      tertimbang: '24.75',
-                      status: '✓ Renstra, IKU, dan PK 2024 Lengkap Terunggah',
+                      nama: 'PERENCANAAN KINERJA',
+                      bobot: '30,00%',
+                      capaian: '83,00',
+                      tertimbang: '24,90',
+                      status: '✓ 25 Kriteria Terpenuhi (Predikat BB / A)',
                       statusClass: 'text-emerald-700 font-medium',
-                      item: lkeItems.find(i => i.komponen === 'Perencanaan Kinerja')
+                      item: lkeItems.find(i => i.komponen === 'PERENCANAAN KINERJA')
                     },
                     {
                       no: 2,
-                      nama: 'Pengukuran Kinerja',
-                      bobot: '30%',
-                      capaian: '79.00',
-                      tertimbang: '23.70',
-                      status: '✓ Manual IKU dan Formulir Kendali Triwulanan Lengkap',
+                      nama: 'PENGUKURAN KINERJA',
+                      bobot: '30,00%',
+                      capaian: '65,00',
+                      tertimbang: '19,50',
+                      status: '✓ 20 Kriteria Terpenuhi (Predikat B / CC)',
                       statusClass: 'text-emerald-700 font-medium',
-                      item: lkeItems.find(i => i.komponen === 'Pengukuran Kinerja')
+                      item: lkeItems.find(i => i.komponen === 'PENGUKURAN KINERJA')
                     },
                     {
                       no: 3,
-                      nama: 'Pelaporan Kinerja',
-                      bobot: '15%',
-                      capaian: '81.00',
-                      tertimbang: '12.15',
-                      status: '✓ LKjIP Tahun 2023 Terarsip dan Telah Direviu',
+                      nama: 'PELAPORAN KINERJA',
+                      bobot: '15,00%',
+                      capaian: '67,00',
+                      tertimbang: '10,05',
+                      status: '✓ 22 Kriteria Terpenuhi (Predikat BB / B / CC)',
                       statusClass: 'text-emerald-700 font-medium',
-                      item: lkeItems.find(i => i.komponen === 'Pelaporan Kinerja')
+                      item: lkeItems.find(i => i.komponen === 'PELAPORAN KINERJA')
                     },
                     {
                       no: 4,
-                      nama: 'Evaluasi Internal',
-                      bobot: '10%',
-                      capaian: '76.50',
-                      tertimbang: '7.65',
-                      status: '⚠ Notulensi Monev TW II Perlu Melampirkan Lembar RTL',
+                      nama: 'EVALUASI AKUNTABILITAS KINERJA INTERNAL',
+                      bobot: '25,00%',
+                      capaian: '52,00',
+                      tertimbang: '13,00',
+                      status: '⚠ 13 Kriteria Terpenuhi (Predikat CC / C)',
                       statusClass: 'text-amber-700 font-medium',
-                      item: lkeItems.find(i => i.komponen === 'Evaluasi Internal')
-                    },
-                    {
-                      no: 5,
-                      nama: 'Capaian Kinerja',
-                      bobot: '15%',
-                      capaian: '82.00',
-                      tertimbang: '12.30',
-                      status: '✓ Realisasi Output BLK dan Mediasi HI Mencapai Target',
-                      statusClass: 'text-emerald-700 font-medium',
-                      item: lkeItems.find(i => i.komponen === 'Capaian Kinerja')
+                      item: lkeItems.find(i => i.komponen === 'EVALUASI AKUNTABILITAS KINERJA INTERNAL')
                     },
                   ].map((row) => (
                     <tr key={row.no} className="hover:bg-slate-50/70">
@@ -750,68 +734,6 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                       <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-800 border-r border-slate-200">{row.capaian}</td>
                       <td className="py-2.5 px-3 text-center font-mono font-bold text-blue-600 border-r border-slate-200">{row.tertimbang}</td>
                       <td className={`py-2.5 px-4 border-r border-slate-200 ${row.statusClass}`}>{row.status}</td>
-                      
-                      {/* Kolom Upload Dokumen Eviden */}
-                      <td className="py-2.5 px-3 border-r border-slate-200 bg-blue-50/15">
-                        {row.item?.uploadedFileName ? (
-                          <div className="p-2 bg-white rounded-lg border border-blue-200 shadow-2xs space-y-1">
-                            <div className="flex items-center justify-between gap-1">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                                <span className="font-semibold text-slate-900 text-xs truncate max-w-[130px]" title={row.item.uploadedFileName}>
-                                  {row.item.uploadedFileName}
-                                </span>
-                              </div>
-                              <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-blue-100 text-blue-800 font-bold shrink-0">
-                                {row.item.uploadedFileType || 'FILE'}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100">
-                              <span>{row.item.uploadedFileSize || 'Berkas'}</span>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handlePreviewLKEFile(row.item!)}
-                                  className="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
-                                  title="Pratinjau Dokumen"
-                                >
-                                  Lihat
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDownloadLKEFile(row.item!)}
-                                  className="text-emerald-600 hover:text-emerald-800 font-semibold cursor-pointer"
-                                  title="Unduh Berkas"
-                                >
-                                  Unduh
-                                </button>
-                                <label className="text-slate-500 hover:text-blue-600 font-semibold cursor-pointer" title="Ganti File">
-                                  Ganti
-                                  <input
-                                    type="file"
-                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
-                                    className="hidden"
-                                    onChange={(e) => handleLKEFileUpload(e, row.item!)}
-                                  />
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-                        ) : row.item ? (
-                          <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-900 border border-blue-200 hover:border-blue-300 rounded-md text-[11px] font-bold cursor-pointer transition-colors shadow-2xs group">
-                            <Upload className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
-                            <span>Unggah Eviden</span>
-                            <input
-                              type="file"
-                              accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
-                              className="hidden"
-                              onChange={(e) => handleLKEFileUpload(e, row.item!)}
-                            />
-                          </label>
-                        ) : (
-                          <span className="text-slate-400 italic text-[11px]">-</span>
-                        )}
-                      </td>
 
                       <td className="no-print py-2.5 px-3 text-center">
                         {row.item && (
@@ -828,8 +750,8 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                               setLkeUploadedFileType(row.item!.uploadedFileType);
                               setLkeUploadedFileDataUrl(row.item!.uploadedFileDataUrl);
                             }}
-                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded"
-                            title="Edit Komponen & Eviden LKE"
+                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded cursor-pointer"
+                            title="Edit Komponen LKE"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
@@ -839,16 +761,13 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   ))}
                   <tr className="bg-slate-100 font-bold">
                     <td colSpan={2} className="py-3 px-4 text-slate-900 border-r border-slate-200 uppercase">
-                      Total Capaian Nilai SAKIP 2024
+                      Total Capaian Nilai SAKIP (Hasil Evaluasi LKE)
                     </td>
-                    <td className="py-3 px-3 text-center font-mono border-r border-slate-200">100%</td>
+                    <td className="py-3 px-3 text-center font-mono border-r border-slate-200">100,00%</td>
                     <td className="py-3 px-3 text-center font-mono text-slate-900 border-r border-slate-200">-</td>
-                    <td className="py-3 px-3 text-center font-mono text-blue-700 text-sm border-r border-slate-200">80.50</td>
-                    <td className="py-3 px-4 border-r border-slate-200 text-emerald-800">
-                      PREDIKAT: <span className="bg-emerald-600 text-white px-2 py-0.5 rounded ml-1">A (MEMUASKAN)</span>
-                    </td>
-                    <td className="py-3 px-3 border-r border-slate-200 text-slate-600 text-center font-normal text-[11px]">
-                      5 Berkas Lengkap Terlampir
+                    <td className="py-3 px-3 text-center font-mono text-blue-700 text-sm border-r border-slate-200">67,45</td>
+                    <td className="py-3 px-4 border-r border-slate-200 text-amber-800">
+                      PREDIKAT: <span className="bg-amber-600 text-white px-2 py-0.5 rounded ml-1">B (BAIK)</span>
                     </td>
                     <td className="no-print py-3 px-3 text-center"></td>
                   </tr>
@@ -917,11 +836,11 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-                    <th className="py-3 px-3 border-r border-slate-200 w-36">Komponen</th>
-                    <th className="py-3 px-4 border-r border-slate-200 min-w-[200px]">Kriteria & Parameter</th>
-                    <th className="py-3 px-2 text-center border-r border-slate-200 w-14">Bobot</th>
-                    <th className="py-3 px-2 text-center border-r border-slate-200 w-14">Skor</th>
-                    <th className="py-3 px-2 text-center border-r border-slate-200 w-14">Nilai</th>
+                    <th className="py-3 px-3 border-r border-slate-200 w-12 text-center">No</th>
+                    <th className="py-3 px-4 border-r border-slate-200 min-w-[280px]">Komponen / Sub Komponen / Kriteria</th>
+                    <th className="py-3 px-2 text-center border-r border-slate-200 w-16">Bobot</th>
+                    <th className="py-3 px-2 text-center border-r border-slate-200 w-16 bg-blue-50/50">Unit/Satker Jawaban</th>
+                    <th className="py-3 px-2 text-center border-r border-slate-200 w-16 bg-blue-50/50">Unit/Satker Nilai</th>
                     <th className="py-3 px-3 border-r border-slate-200 w-28 text-center">Status Eviden</th>
                     {/* Kolom Upload Dokumen Evidence */}
                     <th className="py-3 px-3 border-r border-slate-200 min-w-[220px] text-blue-900 bg-blue-50/60 font-bold">
@@ -942,31 +861,50 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredLKE.map((item) => (
+                  {filteredLKE.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-50/70">
-                      <td className="py-3 px-3 border-r border-slate-200">
-                        <span className="font-bold text-slate-900 block">{item.komponen}</span>
-                        <span className="text-[11px] text-slate-500">{item.subkomponen}</span>
+                      <td className="py-3 px-3 text-center font-mono text-slate-500 border-r border-slate-200 font-bold">
+                        {item.noUrut ?? (index + 1)}
                       </td>
                       <td className="py-3 px-4 border-r border-slate-200">
-                        <div className="font-semibold text-slate-800">{item.kriteria}</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">{item.parameter}</div>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {item.dokumenTerkait.map((doc, i) => (
-                            <span key={i} className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">
-                              {doc}
-                            </span>
-                          ))}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-900 text-xs">{item.komponen}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
+                            {item.kode || 'LKE'}
+                          </span>
                         </div>
+                        <div className="text-[11px] text-blue-700 font-semibold mt-0.5">
+                          {item.subkomponen}
+                        </div>
+                        <div className="text-xs text-slate-800 font-medium mt-1">
+                          {item.parameter}
+                        </div>
+                        {item.dokumenTerkait && item.dokumenTerkait.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {item.dokumenTerkait.map((doc, i) => (
+                              <span key={i} className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">
+                                {doc}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3 px-2 text-center font-mono text-slate-600 border-r border-slate-200">
-                        {item.bobot}%
+                      <td className="py-3 px-2 text-center font-mono text-slate-700 border-r border-slate-200 font-semibold">
+                        {typeof item.bobot === 'number' ? item.bobot.toFixed(2).replace('.', ',') : item.bobot}
                       </td>
-                      <td className="py-3 px-2 text-center font-mono font-bold text-slate-800 border-r border-slate-200">
-                        {item.nilai}
+                      <td className="py-3 px-2 text-center font-mono font-bold text-slate-900 border-r border-slate-200 bg-blue-50/20">
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-xs ${
+                          item.unitJawaban === 'A' ? 'bg-emerald-100 text-emerald-800' :
+                          item.unitJawaban === 'BB' ? 'bg-blue-100 text-blue-800' :
+                          item.unitJawaban === 'B' ? 'bg-amber-100 text-amber-800' :
+                          item.unitJawaban === 'CC' ? 'bg-amber-100 text-amber-900' :
+                          'bg-slate-100 text-slate-700'
+                        }`}>
+                          {item.unitJawaban || '-'}
+                        </span>
                       </td>
-                      <td className="py-3 px-2 text-center font-mono font-bold text-blue-600 border-r border-slate-200">
-                        {item.nilaiAkhir.toFixed(2)}
+                      <td className="py-3 px-2 text-center font-mono font-bold text-blue-700 border-r border-slate-200 bg-blue-50/20">
+                        {item.unitNilai !== undefined ? item.unitNilai.toFixed(2).replace('.', ',') : item.nilaiAkhir.toFixed(2).replace('.', ',')}
                       </td>
                       <td className="py-3 px-3 text-center border-r border-slate-200">
                         <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${

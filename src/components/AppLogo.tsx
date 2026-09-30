@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import logoLuwuUtara from '../assets/images/Luwu_Utara_Logo_(North_Luwu).png';
 
 interface AppLogoProps {
@@ -12,6 +12,8 @@ export const AppLogo: React.FC<AppLogoProps> = ({
   size = 'md',
   showText = false,
 }) => {
+  const [imgError, setImgError] = useState(false);
+
   // Height sizing for the official logo to preserve original proportions (400:483) without stretching
   const sizeClasses = {
     sm: 'h-8 w-auto',
@@ -20,12 +22,18 @@ export const AppLogo: React.FC<AppLogoProps> = ({
     xl: 'h-24 w-auto',
   }[size];
 
+  // Primary image is Vite bundled import; fallback to public/logo.png or public/favicon.png for GitHub Pages
+  const imgSrc = imgError ? './logo.png' : logoLuwuUtara;
+
   return (
     <div className={`inline-flex items-center gap-2.5 ${className}`}>
       <div className="shrink-0 flex items-center justify-center">
         {/* Logo Lambang Resmi Pemerintah Kabupaten Luwu Utara */}
         <img
-          src={logoLuwuUtara}
+          src={imgSrc}
+          onError={() => {
+            if (!imgError) setImgError(true);
+          }}
           alt="Lambang Resmi Pemerintah Kabupaten Luwu Utara"
           className={`${sizeClasses} max-w-none object-contain select-none`}
           loading="eager"

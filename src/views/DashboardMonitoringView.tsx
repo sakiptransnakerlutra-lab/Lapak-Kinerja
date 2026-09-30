@@ -46,13 +46,13 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
 
   // Milestones
   const milestones = [
-    { title: 'Penyusunan Perjanjian Kinerja (PK) 2024', status: 'Selesai', date: '10 Januari 2024', docId: 'doc-pk' },
-    { title: 'Penyusunan Dokumen RENJA & RKT 2024', status: 'Selesai', date: '18 Februari 2024', docId: 'doc-renja' },
-    { title: 'Penyusunan LKjIP Tahun Anggaran 2023', status: 'Selesai', date: '28 Februari 2024', docId: 'doc-lkjip' },
-    { title: 'Monitoring & Evaluasi Kinerja Triwulan I', status: 'Selesai', date: '15 April 2024', docId: null },
-    { title: 'Monitoring & Evaluasi Kinerja Triwulan II', status: 'Selesai', date: '15 Juli 2024', docId: 'doc-monev' },
-    { title: 'Monitoring & Evaluasi Kinerja Triwulan III', status: 'Dalam Proses', date: '15 Oktober 2024', docId: null },
-    { title: 'Evaluasi Akuntabilitas Kinerja oleh Inspektorat', status: 'Terjadwal', date: 'November 2024', docId: null },
+    { title: 'Penyusunan Perjanjian Kinerja (PK) 2026', status: 'Selesai', date: '10 Januari 2026', docId: 'doc-pk' },
+    { title: 'Penyusunan Dokumen RENJA & RKT 2026', status: 'Selesai', date: '18 Februari 2026', docId: 'doc-renja' },
+    { title: 'Penyusunan LKjIP Tahun Anggaran 2025', status: 'Selesai', date: '28 Februari 2026', docId: 'doc-lkjip' },
+    { title: 'Monitoring & Evaluasi Kinerja Triwulan I', status: 'Selesai', date: '15 April 2026', docId: null },
+    { title: 'Monitoring & Evaluasi Kinerja Triwulan II', status: 'Selesai', date: '15 Juli 2026', docId: 'doc-monev' },
+    { title: 'Monitoring & Evaluasi Kinerja Triwulan III', status: 'Dalam Proses', date: '15 Oktober 2026', docId: null },
+    { title: 'Evaluasi Akuntabilitas Kinerja oleh Inspektorat', status: 'Terjadwal', date: 'November 2026', docId: null },
   ];
 
   // Document categories completion
@@ -72,7 +72,7 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold border border-blue-500/30">
               <ShieldCheck className="w-4 h-4" />
-              <span>Status Kesiapan Evaluasi SAKIP 2024</span>
+              <span>Status Kesiapan Evaluasi SAKIP 2026</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
               Dinas Transmigrasi dan Tenaga Kerja Kab. Luwu Utara
@@ -290,7 +290,7 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900">
-                Jadwal & Agenda Siklus SAKIP 2024
+                Jadwal & Agenda Siklus SAKIP 2026
               </h3>
               <p className="text-xs text-slate-500">
                 Tahapan penyusunan, monitoring, dan evaluasi berkala

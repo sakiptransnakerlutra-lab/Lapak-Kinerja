@@ -32,7 +32,7 @@ export const DashboardIKKView: React.FC<DashboardIKKViewProps> = ({
   onDeleteItem,
 }) => {
   const [selectedBidang, setSelectedBidang] = useState<string>('all');
-  const [selectedYear, setSelectedYear] = useState<number>(2024);
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,7 +50,7 @@ export const DashboardIKKView: React.FC<DashboardIKKViewProps> = ({
     anggaran: 100000000,
     realisasiAnggaran: 85000000,
     penanggungJawab: '',
-    tahun: 2024,
+    tahun: 2026,
   });
 
   const isAdmin = currentUser?.role === 'admin';

@@ -42,7 +42,7 @@ export const PrintHeader: React.FC<PrintHeaderProps> = ({
         <div className="w-20 h-20 shrink-0 flex items-center justify-center">
           {/* SAKIP badge placeholder for visual symmetry */}
           <div className="border border-slate-300 rounded p-1 text-[9px] font-mono text-center text-slate-500">
-            LAPAK<br />KINERJA<br />2024
+            LAPAK<br />KINERJA<br />2026
           </div>
         </div>
       </div>

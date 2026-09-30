@@ -418,7 +418,7 @@ export interface ExportLKEOptions {
  * Export Data LKE to native Excel (.xlsx) format
  */
 export function exportLKEToExcel(items: LKEItem[], options?: ExportLKEOptions): void {
-  const year = options?.year || 2024;
+  const year = options?.year || 2026;
   const wb = XLSX.utils.book_new();
 
   const formattedDate = new Date().toLocaleDateString('id-ID', {
@@ -524,7 +524,7 @@ export function exportLKEToExcel(items: LKEItem[], options?: ExportLKEOptions): 
  * Export Data LKE to CSV format with UTF-8 BOM
  */
 export function exportLKEToCSV(items: LKEItem[], options?: ExportLKEOptions): void {
-  const year = options?.year || 2024;
+  const year = options?.year || 2026;
 
   const headers = [
     'No',
@@ -771,7 +771,7 @@ export function exportKKEPDToExcel(items: KKEPDItem[]): void {
   const rows: any[][] = [
     ['PEMERINTAH KABUPATEN LUWU UTARA'],
     ['DINAS TRANSMIGRASI DAN TENAGA KERJA'],
-    ['KERTAS KERJA EVALUASI PERANGKAT DAERAH (KKE PD) SAKIP 2024'],
+    ['KERTAS KERJA EVALUASI PERANGKAT DAERAH (KKE PD) SAKIP 2026'],
     [`Tanggal Unduh: ${formattedDate} | Total Indikator: ${total} | Rata-rata Skor: ${avgSkor}`],
     [],
     [
@@ -832,8 +832,8 @@ export function exportKKEPDToExcel(items: KKEPDItem[]): void {
     { wch: 35 }, // Rekomendasi
   ];
 
-  XLSX.utils.book_append_sheet(wb, ws, 'KKE_PD_2024');
-  const filename = `KKE_PD_SAKIP_Transnaker_Luwu_Utara_2024.xlsx`;
+  XLSX.utils.book_append_sheet(wb, ws, 'KKE_PD_2026');
+  const filename = `KKE_PD_SAKIP_Transnaker_Luwu_Utara_2026.xlsx`;
   downloadWorkbook(wb, filename);
 }
 
@@ -862,7 +862,7 @@ export function exportKKEPDToCSV(items: KKEPDItem[]): void {
   const lines: string[] = [
     `# PEMERINTAH KABUPATEN LUWU UTARA`,
     `# DINAS TRANSMIGRASI DAN TENAGA KERJA`,
-    `# KERTAS KERJA EVALUASI PERANGKAT DAERAH (KKE PD) SAKIP 2024`,
+    `# KERTAS KERJA EVALUASI PERANGKAT DAERAH (KKE PD) SAKIP 2026`,
     headers.map(escapeCSV).join(','),
   ];
 
@@ -886,7 +886,7 @@ export function exportKKEPDToCSV(items: KKEPDItem[]): void {
 
   const csvString = '\uFEFF' + lines.join('\r\n');
   const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-  downloadBlob(blob, `KKE_PD_SAKIP_Transnaker_Luwu_Utara_2024.csv`);
+  downloadBlob(blob, `KKE_PD_SAKIP_Transnaker_Luwu_Utara_2026.csv`);
 }
 
 

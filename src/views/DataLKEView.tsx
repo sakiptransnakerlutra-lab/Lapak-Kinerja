@@ -258,7 +258,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
         id: `lke-upload-${item.id}`,
         title: item.kriteria,
         kategori: 'MONEV',
-        tahun: 2024,
+        tahun: 2026,
         bidang: 'Sekretariat Dinas',
         fileName: item.uploadedFileName,
         fileType: (item.uploadedFileType as any) || 'pdf',
@@ -338,7 +338,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
         id: `kke-upload-${item.id}`,
         title: item.indikator,
         kategori: 'MONEV',
-        tahun: 2024,
+        tahun: 2026,
         bidang: 'Sekretariat Dinas',
         fileName: fileName,
         fileType: (item.uploadedFileType as any) || 'pdf',
@@ -717,8 +717,8 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   label="Ekspor ke Excel"
                   itemCount={lkeItems.length}
                   dataName="Rekap LKE"
-                  onExportExcel={() => exportLKEToExcel(lkeItems, { year: 2024, searchQuery })}
-                  onExportCSV={() => exportLKEToCSV(lkeItems, { year: 2024, searchQuery })}
+                  onExportExcel={() => exportLKEToExcel(lkeItems, { year: 2026, searchQuery })}
+                  onExportCSV={() => exportLKEToCSV(lkeItems, { year: 2026, searchQuery })}
                 />
                 <button
                   type="button"
@@ -878,8 +878,8 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                   label="Ekspor ke Excel"
                   itemCount={filteredLKE.length}
                   dataName="Data LKE"
-                  onExportExcel={() => exportLKEToExcel(filteredLKE, { year: 2024, searchQuery })}
-                  onExportCSV={() => exportLKEToCSV(filteredLKE, { year: 2024, searchQuery })}
+                  onExportExcel={() => exportLKEToExcel(filteredLKE, { year: 2026, searchQuery })}
+                  onExportCSV={() => exportLKEToCSV(filteredLKE, { year: 2026, searchQuery })}
                 />
                 <button
                   type="button"
@@ -2263,7 +2263,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                     Upload Dokumen Evidence LKE SAKIP
                   </h3>
                   <p className="text-[11px] text-blue-100">
-                    Daftar Parameter dan Indikator Uji LKE SAKIP 2024
+                    Daftar Parameter dan Indikator Uji LKE SAKIP 2026
                   </p>
                 </div>
               </div>
@@ -2489,7 +2489,7 @@ export const DataLKEView: React.FC<DataLKEViewProps> = ({
                     Upload Dokumen Evidence KKE PD
                   </h3>
                   <p className="text-[11px] text-blue-100">
-                    Instrumen Kertas Kerja Evaluasi Perangkat Daerah SAKIP 2024
+                    Instrumen Kertas Kerja Evaluasi Perangkat Daerah SAKIP 2026
                   </p>
                 </div>
               </div>

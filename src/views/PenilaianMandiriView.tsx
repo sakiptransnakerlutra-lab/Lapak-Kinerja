@@ -113,7 +113,7 @@ export const PenilaianMandiriView: React.FC<PenilaianMandiriViewProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Penilaian_Mandiri_SAKIP_Transnaker_Luwu_Utara_2024.csv`);
+    link.setAttribute('download', `Penilaian_Mandiri_SAKIP_Transnaker_Luwu_Utara_2026.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -122,7 +122,7 @@ export const PenilaianMandiriView: React.FC<PenilaianMandiriViewProps> = ({
   return (
     <div className="space-y-6">
       <PrintHeader 
-        title="LEMBAR KERJA EVALUASI PENILAIAN MANDIRI SAKIP TAHUN 2024"
+        title="LEMBAR KERJA EVALUASI PENILAIAN MANDIRI SAKIP TAHUN 2026"
         subTitle="Berdasarkan PermenPAN-RB No. 88 / 89 · Dinas Transmigrasi dan Tenaga Kerja Kab. Luwu Utara"
       />
 

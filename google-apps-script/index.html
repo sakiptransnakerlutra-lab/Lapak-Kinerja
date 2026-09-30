@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>E-SAKIP & LKE DINAS TRANSMIGRASI DAN TENAGA KERJA KABUPATEN LUWU UTARA</title>
+  
+  <!-- Favicon Resmi Luwu Utara -->
+  <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Luwu_Utara_Logo_%28North_Luwu%29.png/480px-Luwu_Utara_Logo_%28North_Luwu%29.png">
+  
+  <!-- Font Google Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+    }
+    #app-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #091e42 0%, #0f172a 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      transition: opacity 0.4s ease, visibility 0.4s;
+    }
+    .loading-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3.5px solid rgba(255, 255, 255, 0.15);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Layar Pemuatan (Loading Splash) -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="flex flex-col items-center text-center p-6 max-w-md">
+      <!-- Logo Luwu Utara Asli -->
+      <div class="w-20 h-24 mb-4 relative flex items-center justify-center">
+        <img 
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Luwu_Utara_Logo_%28North_Luwu%29.png/480px-Luwu_Utara_Logo_%28North_Luwu%29.png" 
+          alt="Logo Kabupaten Luwu Utara" 
+          class="w-full h-full object-contain filter drop-shadow-md"
+          onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/c/c5/Luwu_Utara_Logo_%28North_Luwu%29.png';"
+        />
+      </div>
+
+      <h1 class="text-white font-extrabold text-lg sm:text-xl tracking-tight leading-snug">
+        E-SAKIP & LKE SAKIP
+      </h1>
+      <p class="text-sky-300 text-xs font-semibold mt-1">
+        Dinas Transmigrasi dan Tenaga Kerja
+      </p>
+      <p class="text-slate-400 text-[11px] mt-0.5">
+        Pemerintah Kabupaten Luwu Utara · Tahun 2026
+      </p>
+
+      <div class="mt-6 flex flex-col items-center gap-2.5">
+        <div class="spinner"></div>
+        <span class="text-xs text-slate-300 font-medium tracking-wide">
+          Memuat Sistem Akuntabilitas Kinerja...
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Iframe Aplikasi Web Utama -->
+  <iframe 
+    id="app-frame" 
+    src="https://ais-pre-yljs53yeklsjvvpmsdbu3r-339035356527.asia-southeast1.run.app" 
+    allow="clipboard-read; clipboard-write; fullscreen"
+    onload="hideLoading()"
+  ></iframe>
+
+  <script>
+    // Sembunyikan layar loading setelah iframe termuat sempurna
+    function hideLoading() {
+      var overlay = document.getElementById('loadingOverlay');
+      if (overlay) {
+        overlay.classList.add('hidden');
+      }
+    }
+
+    // Fallback jika iframe lambat termuat (maks 4 detik)
+    setTimeout(hideLoading, 4000);
+
+    // Komunikasi opsional dengan Google Apps Script Backend (google.script.run)
+    window.addEventListener('message', function(event) {
+      if (!event.data) return;
+      
+      // Jika aplikasi meminta unggah berkas ke Google Drive
+      if (event.data.type === 'UPLOAD_TO_DRIVE' && typeof google !== 'undefined' && google.script) {
+        google.script.run
+          .withSuccessHandler(function(result) {
+            var iframe = document.getElementById('app-frame');
+            if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'UPLOAD_SUCCESS',
+                result: result
+              }, '*');
+            }
+          })
+          .withFailureHandler(function(error) {
+            var iframe = document.getElementById('app-frame');
+            if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'UPLOAD_FAILED',
+                error: error
+              }, '*');
+            }
+          })
+          .uploadEvidenceToDrive(event.data.base64, event.data.fileName, event.data.mimeType);
+      }
+    });
+  </script>
+</body>
+</html>

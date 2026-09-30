@@ -52,27 +52,42 @@ export const StorageService = {
   // Auth & User Management
   init(): void {
     try {
+      const DATA_YEAR_KEY = 'app_data_year_version';
+      const currentYearVersion = getItem<string>(DATA_YEAR_KEY, '');
+
       if (!getItem<any>(KEYS.USERS, null)) {
         setItem(KEYS.USERS, INITIAL_USERS);
       }
-      if (!getItem<any>(KEYS.IKP, null)) {
-        setItem(KEYS.IKP, INITIAL_IKP);
-      }
-      if (!getItem<any>(KEYS.IKK, null)) {
-        setItem(KEYS.IKK, INITIAL_IKK);
-      }
-      if (!getItem<any>(KEYS.PENILAIAN, null) || (getItem<any[]>(KEYS.PENILAIAN, []).length !== INITIAL_KOMPONEN_PENILAIAN.length)) {
-        setItem(KEYS.PENILAIAN, INITIAL_KOMPONEN_PENILAIAN);
-      }
-      const existingLKE = getItem<any[]>(KEYS.LKE, []);
-      if (!existingLKE || existingLKE.length < INITIAL_LKE_ITEMS.length) {
-        setItem(KEYS.LKE, INITIAL_LKE_ITEMS);
-      }
-      if (!getItem<any>(KEYS.KKE_PD, null)) {
-        setItem(KEYS.KKE_PD, INITIAL_KKE_PD);
-      }
-      if (!getItem<any>(KEYS.DOCUMENTS, null)) {
+      
+      // Auto-migrate all cached data to Tahun 2026
+      if (currentYearVersion !== '2026_v1') {
         setItem(KEYS.DOCUMENTS, INITIAL_DOCUMENTS);
+        setItem(KEYS.IKP, INITIAL_IKP);
+        setItem(KEYS.IKK, INITIAL_IKK);
+        setItem(KEYS.PENILAIAN, INITIAL_KOMPONEN_PENILAIAN);
+        setItem(KEYS.LKE, INITIAL_LKE_ITEMS);
+        setItem(KEYS.KKE_PD, INITIAL_KKE_PD);
+        setItem(DATA_YEAR_KEY, '2026_v1');
+      } else {
+        if (!getItem<any>(KEYS.IKP, null)) {
+          setItem(KEYS.IKP, INITIAL_IKP);
+        }
+        if (!getItem<any>(KEYS.IKK, null)) {
+          setItem(KEYS.IKK, INITIAL_IKK);
+        }
+        if (!getItem<any>(KEYS.PENILAIAN, null) || (getItem<any[]>(KEYS.PENILAIAN, []).length !== INITIAL_KOMPONEN_PENILAIAN.length)) {
+          setItem(KEYS.PENILAIAN, INITIAL_KOMPONEN_PENILAIAN);
+        }
+        const existingLKE = getItem<any[]>(KEYS.LKE, []);
+        if (!existingLKE || existingLKE.length < INITIAL_LKE_ITEMS.length) {
+          setItem(KEYS.LKE, INITIAL_LKE_ITEMS);
+        }
+        if (!getItem<any>(KEYS.KKE_PD, null)) {
+          setItem(KEYS.KKE_PD, INITIAL_KKE_PD);
+        }
+        if (!getItem<any>(KEYS.DOCUMENTS, null)) {
+          setItem(KEYS.DOCUMENTS, INITIAL_DOCUMENTS);
+        }
       }
     } catch (e) {
       console.warn('Storage initialization fallback:', e);
@@ -299,7 +314,9 @@ export const StorageService = {
         item.linkEvidence.includes('transnaker.luwuutarakab.go.id/sakip') ||
         item.linkEvidence.includes('monev-triwulan2-transnaker-lutra') ||
         item.linkEvidence.includes('notulensi-monev-internal-2024') ||
-        item.linkEvidence.includes('capaian-kinerja-tw3-2024')
+        item.linkEvidence.includes('notulensi-monev-internal-2026') ||
+        item.linkEvidence.includes('capaian-kinerja-tw3-2024') ||
+        item.linkEvidence.includes('capaian-kinerja-tw3-2026')
       );
       const isDummyDoc = item.tautanDokumenId && (
         ['doc-renstra', 'doc-pk', 'doc-monev', 'doc-lkjip', 'doc-renja'].includes(item.tautanDokumenId)

@@ -23,7 +23,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [kategori, setKategori] = useState<SakipDocument['kategori']>('RENJA');
-  const [tahun, setTahun] = useState(2024);
+  const [tahun, setTahun] = useState(2026);
   const [bidang, setBidang] = useState(currentUser?.bidang || STRUKTUR_ORGANISASI_TRANSNAKER[0].nama);
   const [nomorSurat, setNomorSurat] = useState('');
   const [deskripsi, setDeskripsi] = useState('');
@@ -203,7 +203,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Contoh: Rencana Kerja (RENJA) Tahun 2024"
+              placeholder="Contoh: Rencana Kerja (RENJA) Tahun 2026"
               className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 text-slate-900"
             />
           </div>
@@ -278,7 +278,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                 type="text"
                 value={nomorSurat}
                 onChange={(e) => setNomorSurat(e.target.value)}
-                placeholder="Contoh: 560/082/DIS-TRANSNAKER/2024"
+                placeholder="Contoh: 560/082/DIS-TRANSNAKER/2026"
                 className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 text-slate-900 font-mono"
               />
             </div>

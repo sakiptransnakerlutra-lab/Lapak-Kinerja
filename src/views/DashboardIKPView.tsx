@@ -32,7 +32,7 @@ export const DashboardIKPView: React.FC<DashboardIKPViewProps> = ({
   onSaveItem,
   onDeleteItem,
 }) => {
-  const [selectedYear, setSelectedYear] = useState<number>(2024);
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   
   // Modal states
@@ -57,7 +57,7 @@ export const DashboardIKPView: React.FC<DashboardIKPViewProps> = ({
     status: 'Tercapai',
     penanggungJawab: '',
     keterangan: '',
-    tahun: 2024,
+    tahun: 2026,
   });
 
   const isAdmin = currentUser?.role === 'admin';
